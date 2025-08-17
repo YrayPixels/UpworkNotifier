@@ -1,0 +1,92 @@
+Moses Erhinyodavwe  
+moseserhinyodavwe2@gmail.com 08132532430 
+linkedin.com/in/moses-erhinyodavwe-6b52b116a 
+Summary 
+Hey there! I'm Moses Erhinyodavwe, a passionate problem solver and software developer. With a knack for probleming solving, I've had the pleasure of working on diverse projects, both independently and as a team player. 
+As a Full Stack Developer at Silex Secure Lab, I lead a dynamic team in delivering top-notch products for clients. Whether it's converting Figma designs into high-quality code, managing databases, or designing intuitive user interfaces, I thrive on the exciting intersection of creativity and technology. 
+My journey includes contributing my skills to impactful projects like the National University Commission's data reporting and analytical application and building e-commerce platforms such as GalleryBebe and GAPA AUTO PARTS. I am an expert in frontend and backend development, utilizing tools like ReactJS, Laravel, and MySQL to craft seamless and robust systems. 
+
+Experience 
+
+Senior Software Engineer
+PixelDat
+PixelDat is a web3 company that is the Gaming section of solana, they are focused in building high scalable solana dApps and games.
+April 2024 - Present
+
+- Implemented figma designs to code, with high precision and accuracy.
+- Designed and implemented the work flow for the telegram bot of their product, PUMPMILITIA.
+- Implemented Email Template Design.
+- I wrote scalable and secure smart contracts on the solana blockchain network.
+-  I wrote smart contracts to handle pre-sale and also a whitelist-gated sale.
+- I built this website from start to finish https://www.pumpmilitia.io/.
+
+Tools Used: NextJs, ReactJs, Redux, Typescript, MaterialUI, TailwindCss, Rust, Anchor, SolanaWeb3js, MetaPlex and SolanaSpl Library.
+
+Software Engineer
+Monirates 
+Monirate is a fintech company that focuses on bridging the gap in cross border payments by providing liquidity and interface for cross border payments.
+Sep 2023 - April 2024
+I worked as an all systems Frontend Engineer, working both on mobile applications and also web applications.
+Designed an Emailing Template for Internal Mailing and marketing mails that increased sales by 50%. 
+Implemented the CRM tool that helped increase sales.
+Worked with the backend team to provide an easily navigable dashboard for the admin to track applications data
+
+Tools Used: NextJs, ReactJs, Redux, Typescript, MaterialUI, TailwindCss.
+Senior Software Engineer
+Ynet Interactive 
+Ynet Interactive is a company that works with other companies to help build custom applications for them and provide them support. Ynet projects are across different areas Although they have their own product a CRM tool CallSavvy
+
+Backend Engineer-Ynet (Insure.IO)
+Feb 2024 - May 2024 
+- Designed a persistent layer for authentication and Verification. 
+-Designed a role based navigation for the site that is powered by Laravel middleware classes 
+
+Fullstack Engineer-Ynet (CallSavvy)
+Nov 2023 - May 2024
+Designed the UI for CallSavvy Calendar Scheduling system 
+- Implemented chat system with both Instagram and Twitter API. 
+- Implemented full AI chat improved system 
+
+Fullstack Engineer-Ynet (Medic360)
+Nov 2023 - Jan 2024 (3 months) 
+- Working closely with the CTO to create custom product and provide support to applications - Designed and built Emergency response management system for Medic360 app: This process included consuming and creating API's for the mobile app using Cordova 
+Team Lead-Arik
+SILEX SECURE LAB LTD 
+Nov 2022 - Dec 2023 (1 year 2 months) 
+I worked with junior team members to review and edit their code, create and design systems, provide mental and technical support to team members and help with project Management 
+- Designed and implemented the figma design to Code. 
+- Created API's that I used for the implementation 
+- Optimized the Endpoints and application to increase load time and reaction by 20%> 
+Team Lead-GalleryBebe 
+Jan 2023 - Nov 2023 (11 months) 
+Full Stack Engineer- National University Commission 
+Dec 2022 - Nov 2023 (1 year) 
+
+Full Stack Developer-GAPA 
+Nov 2022 - May 2023 (7 months) 
+I worked as a full time staff and while working based on tasks worked on. Worked with a team to deliver top notch products for clients who engage the services of the company. 
+-implemented instant email notification and increased sales by 10%. 
+-optimized the warehouse modules and increased store inventory by 100%. 
+- Designed and created the accounting module to make accounting and calculations for the accountant by a glance very easy. 
+Tools I used here include FrontEnd Stacks and Backend Stacks such as Laravel and PHP. Created and Consumed REST API's, while implementing top notch security Algo 
+
+
+
+Education 
+University of Ilorin 
+B.forestry and wildlife, Forest Management/Forest Resources Management (Sep 2016 - Sep 2021)
+Holberton School 
+Computer Software Engineering 
+Jun 2022 - Aug 2024 
+
+Turbine Builders Cohort
+Expert in Rust and Anchor
+Jun- Aug 2 024 
+Licenses & Certifications 
+Complete JavaScript, XML, AJAX and React Bootcamp - Hands-On - YouAccel UC-c0222f79-9fb2-4cad-b28c-cda3ca035b7d 
+Introduction to FrontEnd Development - Coursera Course Certificates PUVDEQMHNFG9 
+Introduction to Backend Development - Coursera Course Certificates WM2QVDQ26P8E 
+
+Skills 
+MySQL   •   React   •   Web Technologies   •   Application Development   •   Mobile Applications   •   React Native   •   Node.js   •   Tailwind CSS   •   REST APIs   •   Twilo 
+

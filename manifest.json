@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Upwork Job Notifier",
+  "version": "1.0.0",
+  "description": "Monitors Upwork's most recent jobs and sends notifications",
+  "permissions": [
+    "notifications",
+    "storage",
+    "alarms",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.upwork.com/*",
+    "https://api.openai.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.upwork.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Upwork Job Notifier"
+  },
+  "icons": {
+    "16": "icons/icon.svg",
+    "48": "icons/icon.svg",
+    "128": "icons/icon.svg"
+  }
+} 

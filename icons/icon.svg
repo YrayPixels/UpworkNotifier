@@ -1,0 +1,24 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#grad1)" stroke="#fff" stroke-width="4"/>
+  
+  <!-- Briefcase icon -->
+  <rect x="32" y="48" width="64" height="40" rx="4" fill="#fff" opacity="0.9"/>
+  <rect x="40" y="40" width="48" height="8" rx="4" fill="#fff" opacity="0.9"/>
+  
+  <!-- Notification bell -->
+  <path d="M 88 32 L 88 28 C 88 20 82 14 74 14 L 54 14 C 46 14 40 20 40 28 L 40 32 L 32 32 L 32 40 L 96 40 L 96 32 Z" fill="#fff" opacity="0.9"/>
+  <circle cx="64" cy="44" r="2" fill="#667eea"/>
+  
+  <!-- Job notification dots -->
+  <circle cx="48" cy="72" r="3" fill="#fff"/>
+  <circle cx="64" cy="72" r="3" fill="#fff"/>
+  <circle cx="80" cy="72" r="3" fill="#fff"/>
+</svg> 

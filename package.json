@@ -1,0 +1,34 @@
+{
+  "name": "upwork-job-notifier",
+  "version": "1.0.0",
+  "description": "A Chrome extension that monitors Upwork's most recent jobs page and sends notifications",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'No build process needed for Chrome extension'",
+    "test": "echo 'No tests specified'",
+    "lint": "echo 'No linter configured'"
+  },
+  "keywords": [
+    "chrome-extension",
+    "upwork",
+    "job-notifier",
+    "notifications",
+    "monitoring"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/upwork-job-notifier.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/upwork-job-notifier/issues"
+  },
+  "homepage": "https://github.com/yourusername/upwork-job-notifier#readme",
+  "devDependencies": {
+    "svg2png": "^1.1.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 
