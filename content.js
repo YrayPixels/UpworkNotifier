@@ -143,7 +143,7 @@ class UpworkContentScript {
         console.log("🔄 Jobs panel refreshed due to new jobs");
       } else if (request.action === "testExtraction") {
         // Test job extraction on current page
-        this.testJobExtraction(sendResponse);
+        this.testJobExtraction();
         return true; // Keep message channel open for async response
       }
     });
@@ -1577,648 +1577,211 @@ class UpworkContentScript {
   extractJobDataFromApplicationPage() {
     try {
       console.log("🔍 Extracting job data from application page...");
+      console.log("🔍 Current URL:", window.location.href);
+      console.log("🔍 Page title:", document.title);
 
-      // WORKING SELECTORS - Based on actual Upwork page structure
+      // SIMPLE AND EFFECTIVE EXTRACTION
+      let title = "";
+      let description = "";
+      let budget = "";
+      let jobType = "";
+      let postedTime = "";
+      let skills = [];
+
+      // 1. TITLE EXTRACTION - Look for the main job title
       const titleSelectors = [
-        // Primary selectors (most common across different page types)
         'h1[data-test="job-title"]',
         "h1.job-title",
         'h1[class*="title"]',
-        'h1[class*="heading"]',
         'h2[data-test="job-title"]',
         "h2.job-title",
         'h3[data-test="job-title"]',
         "h3.job-title",
-        // New page specific selectors
-        'h3[class*="h5"]',
-        'h3[class*="h4"]',
-        'h3[class*="h3"]',
-        // Fallback selectors
+        '[data-test="job-title"]',
         "h1",
         "h2",
         "h3",
-        "h4",
-        // Generic title selectors
-        '[data-test="job-title"]',
-        '[class*="title"]',
-        '[class*="heading"]',
-        // Universal fallback - any element that looks like a job title
-        '[class*="job"]',
-        '[id*="job"]',
-        '[data-*="job"]',
       ];
 
-      const descriptionSelectors = [
-        // Primary selectors (most common across different page types)
+      for (const selector of titleSelectors) {
+        const element = document.querySelector(selector);
+        if (element && element.textContent.trim()) {
+          title = element.textContent.trim();
+          console.log("✅ Title found:", title);
+          break;
+        }
+      }
+
+      // 2. DESCRIPTION EXTRACTION - Look for the main job description
+      const descSelectors = [
         '[data-test="job-description"]',
         ".job-description",
         ".description",
         '[class*="description"]',
-        // New page specific selectors
-        ".description.text-body-sm",
-        '.description[class*="text-body"]',
-        // Fallback selectors
-        'p[class*="description"]',
-        'div[class*="description"]',
-        'span[class*="description"]',
-        // Generic content selectors
         '[class*="content"]',
-        '[class*="body"]',
-        // Universal fallback - any element with substantial text
-        'div[class*="text"]',
-        'p[class*="text"]',
-        'span[class*="text"]',
-        // Fallback to any paragraph or div with reasonable length
-        "p",
-        "div",
+        "main",
+        "article",
       ];
 
-      const budgetSelectors = [
-        // Primary selectors (most common across different page types)
-        '[data-test="budget"]',
-        '[data-test="rate"]',
-        '[data-test="amount"]',
-        ".budget",
-        ".rate",
-        ".amount",
-        // Fallback selectors
-        '[class*="budget"]',
-        '[class*="rate"]',
-        '[class*="amount"]',
-        '[class*="price"]',
-        // Look for currency patterns in text content
-        "strong",
-        "span",
-        "div",
-        "p",
-      ];
-
-      const jobTypeSelectors = [
-        // Primary selectors (most common across different page types)
-        '[data-test="job-type"]',
-        '[data-test="experience-level"]',
-        ".job-type",
-        ".experience-level",
-        // Fallback selectors
-        '[class*="type"]',
-        '[class*="level"]',
-        '[class*="tier"]',
-        // Look for common job type text in content
-        "strong",
-        "span",
-        "div",
-        "small",
-      ];
-
-      const durationSelectors = [
-        // Primary selectors (most common across different page types)
-        '[data-test="duration"]',
-        '[data-test="timeline"]',
-        ".duration",
-        ".timeline",
-        // Fallback selectors
-        '[class*="duration"]',
-        '[class*="timeline"]',
-        '[class*="period"]',
-        // Look for time-related text in content
-        "strong",
-        "span",
-        "div",
-        "small",
-      ];
-
-      const skillsSelectors = [
-        // Primary selectors (most common across different page types)
-        '[data-test="skills"]',
-        '[data-test="tags"]',
-        ".skills",
-        ".tags",
-        // New page specific selectors
-        ".air3-token",
-        ".air3-token-wrap",
-        'span[class*="air3-token"]',
-        // Fallback selectors
-        '[class*="skill"]',
-        '[class*="tag"]',
-        '[class*="token"]',
-        // Generic skill containers
-        "ul li",
-        'div[class*="skill"]',
-        'span[class*="skill"]',
-        // Look for skills section
-        "h4",
-        'div[class*="skills"]',
-        // Universal fallback - any element that might contain skills
-        '[class*="list"]',
-        '[class*="item"]',
-      ];
-
-      const postedSelectors = [
-        // Primary selectors (most common across different page types)
-        '[data-test="posted"]',
-        '[data-test="date"]',
-        ".posted",
-        ".date",
-        // New page specific selectors
-        'span[itemprop="datePosted"]',
-        // Fallback selectors
-        '[class*="posted"]',
-        '[class*="date"]',
-        '[class*="time"]',
-        // Look for date patterns in content
-        "span",
-        "small",
-        "div",
-      ];
-
-      // Helper function to find element with multiple selectors
-      const findElement = (selectors, context = document) => {
-        for (const selector of selectors) {
-          try {
-            const element = context.querySelector(selector);
-            if (element && element.textContent.trim()) {
-              return element.textContent.trim();
-            }
-          } catch (e) {
-            // Skip invalid selectors
-            continue;
-          }
-        }
-        return "";
-      };
-
-      // Helper function to find skills with multiple approaches
-      const findSkills = () => {
-        // Try multiple approaches
-        const approaches = [
-          // Approach 1: Look for air3-token skills (new page structure)
-          () => {
-            const skillElements = document.querySelectorAll(
-              '.air3-token, .air3-token-wrap span, span[class*="air3-token"]'
-            );
-            if (skillElements.length > 0) {
-              return Array.from(skillElements)
-                .map((el) => el.textContent.trim())
-                .filter((text) => text.length > 0);
-            }
-            return [];
-          },
-          // Approach 2: Look for skill containers
-          () => {
-            const skillElements = document.querySelectorAll(
-              '[class*="skill"], [class*="tag"], [class*="token"]'
-            );
-            if (skillElements.length > 0) {
-              return Array.from(skillElements)
-                .map((el) => el.textContent.trim())
-                .filter((text) => text.length > 0);
-            }
-            return [];
-          },
-          // Approach 3: Look for list items that might be skills
-          () => {
-            const listItems = document.querySelectorAll("ul li, ol li");
-            const skills = [];
-            listItems.forEach((item) => {
-              const text = item.textContent.trim();
-              if (
-                text.length > 0 &&
-                text.length < 50 &&
-                !text.includes("$") &&
-                !text.includes("ago") &&
-                !text.includes("Posted")
-              ) {
-                skills.push(text);
-              }
-            });
-            return skills.slice(0, 10); // Limit to 10 skills
-          },
-          // Approach 4: Look for any short text that might be skills
-          () => {
-            const spans = document.querySelectorAll("span, div");
-            const skills = [];
-            spans.forEach((span) => {
-              const text = span.textContent.trim();
-              if (
-                text.length > 2 &&
-                text.length < 30 &&
-                !text.includes("$") &&
-                !text.includes("ago") &&
-                !text.includes("Posted") &&
-                !text.includes("Budget") &&
-                !text.includes("Experience") &&
-                !text.includes("Project")
-              ) {
-                skills.push(text);
-              }
-            });
-            return skills.slice(0, 8); // Limit to 8 skills
-          },
-          // Approach 5: Look for skills in the "Skills and expertise" section
-          () => {
-            // Look for skills section by text content
-            const allElements = document.querySelectorAll("h4, div, span");
-            let skillsSection = null;
-
-            for (const element of allElements) {
-              const text = element.textContent.trim();
-              if (
-                text.toLowerCase().includes("skills and expertise") ||
-                text.toLowerCase().includes("skills") ||
-                text.toLowerCase().includes("expertise")
-              ) {
-                skillsSection = element;
-                break;
-              }
-            }
-
-            if (skillsSection) {
-              const skillElements =
-                skillsSection.parentElement?.querySelectorAll(
-                  '.air3-token, span[class*="air3-token"], [class*="skill"], [class*="tag"]'
-                ) || [];
-              if (skillElements.length > 0) {
-                return Array.from(skillElements)
-                  .map((el) => el.textContent.trim())
-                  .filter((text) => text.length > 0);
-              }
-            }
-            return [];
-          },
-        ];
-
-        for (const approach of approaches) {
-          try {
-            const skills = approach();
-            if (skills.length > 0) {
-              return skills;
-            }
-          } catch (e) {
-            continue;
-          }
-        }
-        return [];
-      };
-
-      // Extract data using universal selectors
-      const title = findElement(titleSelectors);
-      let description = findElement(descriptionSelectors);
-      const budget = findElement(budgetSelectors);
-      const jobType = findElement(jobTypeSelectors);
-      const duration = findElement(durationSelectors);
-      const skills = findSkills();
-      const postedTime = findElement(postedSelectors);
-
-      // ENHANCED DESCRIPTION EXTRACTION - More robust approach
-      if (!description || description.length < 50) {
-        console.log(
-          "🔍 Primary description extraction failed, trying enhanced methods..."
-        );
-        console.log("🔍 Current page URL:", window.location.href);
-        console.log("🔍 Page title:", document.title);
-
-        // Log page structure for debugging
-        this.logPageStructure();
-
-        // Method 1: Look for the main content area
-        const mainContentSelectors = [
-          '[data-test="job-description"]',
-          ".job-description",
-          ".description",
-          '[class*="description"]',
-          '[class*="content"]',
-          '[class*="body"]',
-          "main",
-          "article",
-          ".main-content",
-          ".job-content",
-        ];
-
-        for (const selector of mainContentSelectors) {
-          try {
-            const element = document.querySelector(selector);
-            if (element) {
-              const text = element.textContent.trim();
-              if (text.length > 100 && text.length < 5000) {
-                description = text;
-                console.log(
-                  "✅ Found description using main content selector:",
-                  selector
-                );
-                break;
-              }
-            }
-          } catch (e) {
-            continue;
-          }
-        }
-
-        // Method 2: Look for the longest text block that might be description
-        if (!description || description.length < 100) {
-          console.log("🔍 Trying longest text block method...");
-          const allElements = document.querySelectorAll(
-            "p, div, span, section"
-          );
-          let longestText = "";
-          let maxLength = 0;
-
-          allElements.forEach((el) => {
-            const text = el.textContent.trim();
-            // Look for substantial text that might be job description
-            if (
-              text.length > 100 &&
-              text.length < 5000 &&
-              (text.includes("need") ||
-                text.includes("should") ||
-                text.includes("include") ||
-                text.includes("project") ||
-                text.includes("task") ||
-                text.includes("work") ||
-                text.includes("looking for") ||
-                text.includes("requirements") ||
-                text.includes("experience") ||
-                text.includes("skills"))
-            ) {
-              if (text.length > maxLength) {
-                maxLength = text.length;
-                longestText = text;
-              }
-            }
-          });
-
-          if (longestText) {
-            description = longestText;
-            console.log(
-              "✅ Found description using longest text method, length:",
-              longestText.length
-            );
-          }
-        }
-
-        // Method 3: Look for specific job description patterns
-        if (!description || description.length < 100) {
-          console.log("🔍 Trying pattern-based extraction...");
-          const patternSelectors = [
-            'div[class*="job-description"]',
-            'div[class*="description"]',
-            'div[class*="content"]',
-            'section[class*="description"]',
-            'section[class*="content"]',
-          ];
-
-          for (const selector of patternSelectors) {
-            try {
-              const elements = document.querySelectorAll(selector);
-              for (const element of elements) {
-                const text = element.textContent.trim();
-                if (text.length > 100 && text.length < 5000) {
-                  description = text;
-                  console.log(
-                    "✅ Found description using pattern selector:",
-                    selector
-                  );
-                  break;
-                }
-              }
-              if (description) break;
-            } catch (e) {
-              continue;
-            }
-          }
-        }
-      }
-
-      // ENHANCED BUDGET EXTRACTION - More robust approach
-      let finalBudget = budget;
-      if (!finalBudget || finalBudget.length < 3) {
-        console.log(
-          "🔍 Primary budget extraction failed, trying enhanced methods..."
-        );
-
-        // Method 1: Look for currency patterns in the entire page
-        const allText = document.body.textContent;
-        const currencyPatterns = [
-          /\$[\d,]+/g, // $100, $1,000
-          /\€[\d,]+/g, // €100, €1,000
-          /\£[\d,]+/g, // £100, £1,000
-          /\d+\s*(?:USD|EUR|GBP|hour|day|week|month)/gi, // 100 USD, 50/hour
-          /\$\d+\s*-\s*\$\d+/g, // $100 - $200
-          /\$\d+\s*to\s*\$\d+/gi, // $100 to $200
-        ];
-
-        for (const pattern of currencyPatterns) {
-          const matches = allText.match(pattern);
-          if (matches && matches.length > 0) {
-            finalBudget = matches[0];
-            console.log("✅ Found budget using currency pattern:", finalBudget);
+      for (const selector of descSelectors) {
+        const element = document.querySelector(selector);
+        if (element && element.textContent.trim()) {
+          const text = element.textContent.trim();
+          if (text.length > 100 && text.length < 5000) {
+            description = text;
+            console.log("✅ Description found, length:", text.length);
             break;
           }
         }
+      }
 
-        // Method 2: Look for budget-related elements
-        if (!finalBudget || finalBudget.length < 3) {
-          const budgetElements = document.querySelectorAll(
-            "strong, span, div, p"
-          );
-          for (const element of budgetElements) {
-            const text = element.textContent.trim();
-            if (text.includes("$") && text.length < 50) {
-              const match = text.match(/\$[\d,]+/);
-              if (match) {
-                finalBudget = match[0];
-                console.log("✅ Found budget in element:", finalBudget);
-                break;
-              }
-            }
+      // 3. BUDGET EXTRACTION - Look for currency amounts
+      const allText = document.body.textContent;
+      const budgetPatterns = [
+        /\$[\d,]+/g, // $100, $1,000
+        /\€[\d,]+/g, // €100, €1,000
+        /\£[\d,]+/g, // £100, £1,000
+        /\d+\s*(?:USD|EUR|GBP|hour|day|week|month)/gi, // 100 USD, 50/hour
+      ];
+
+      for (const pattern of budgetPatterns) {
+        const matches = allText.match(pattern);
+        if (matches && matches.length > 0) {
+          budget = matches[0];
+          console.log("✅ Budget found:", budget);
+          break;
+        }
+      }
+
+      // 4. JOB TYPE EXTRACTION - Look for experience level or job type
+      const typePatterns = [
+        /(Entry Level|Intermediate|Expert|Beginner|Advanced|Junior|Senior)/gi,
+        /(Fixed-price|Hourly|Recurring)/gi,
+        /(Less than 1 month|1 to 3 months|3 to 6 months|6\+ months)/gi,
+      ];
+
+      for (const pattern of typePatterns) {
+        const match = allText.match(pattern);
+        if (match) {
+          jobType = match[0];
+          console.log("✅ Job type found:", jobType);
+          break;
+        }
+      }
+
+      // 5. POSTED TIME EXTRACTION - Look for date patterns
+      const datePatterns = [
+        /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/gi,
+        /\d+\s+(?:hour|day|week|month)s?\s+ago/gi,
+        /Posted\s+(?:on\s+)?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/gi,
+      ];
+
+      for (const pattern of datePatterns) {
+        const match = allText.match(pattern);
+        if (match) {
+          postedTime = match[0];
+          console.log("✅ Posted time found:", postedTime);
+          break;
+        }
+      }
+
+      // 6. SKILLS EXTRACTION - Look for skill tags
+      const skillSelectors = [
+        ".air3-token",
+        ".air3-token-wrap span",
+        'span[class*="air3-token"]',
+        '[class*="skill"]',
+        '[class*="tag"]',
+      ];
+
+      for (const selector of skillSelectors) {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+          skills = Array.from(elements)
+            .map((el) => el.textContent.trim())
+            .filter((text) => text.length > 0 && text.length < 50);
+          if (skills.length > 0) {
+            console.log("✅ Skills found:", skills.length);
+            break;
           }
         }
       }
 
-      // FINAL FALLBACK - Content-based extraction for ANY page structure
-      const contentBasedExtraction = () => {
-        const fallbackData = {};
+      // 7. FALLBACK EXTRACTION - If we still don't have key data, try harder
+      if (!title || title.length < 10) {
+        // Look for any heading that might be a job title
+        const headings = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+        for (const heading of headings) {
+          const text = heading.textContent.trim();
+          if (
+            text.length > 10 &&
+            text.length < 100 &&
+            (text.includes("Developer") ||
+              text.includes("Engineer") ||
+              text.includes("Designer") ||
+              text.includes("React") ||
+              text.includes("Frontend") ||
+              text.includes("Backend"))
+          ) {
+            title = text;
+            console.log("✅ Title found via fallback:", title);
+            break;
+          }
+        }
+      }
 
-        // If we still don't have a title, look for the largest text that might be a job title
-        if (!title || title === "Job Title Not Found") {
-          const allElements = document.querySelectorAll(
-            "h1, h2, h3, h4, h5, h6, div, span"
+      if (!description || description.length < 100) {
+        // Look for the longest text block that might be a description
+        const paragraphs = document.querySelectorAll("p, div");
+        let longestText = "";
+        let maxLength = 0;
+
+        for (const p of paragraphs) {
+          const text = p.textContent.trim();
+          if (
+            text.length > 100 &&
+            text.length < 2000 &&
+            (text.includes("need") ||
+              text.includes("should") ||
+              text.includes("project") ||
+              text.includes("work") ||
+              text.includes("looking for"))
+          ) {
+            if (text.length > maxLength) {
+              maxLength = text.length;
+              longestText = text;
+            }
+          }
+        }
+
+        if (longestText) {
+          description = longestText;
+          console.log(
+            "✅ Description found via fallback, length:",
+            longestText.length
           );
-          let largestText = "";
-          let maxLength = 0;
-
-          allElements.forEach((el) => {
-            const text = el.textContent.trim();
-            if (
-              text.length > 20 &&
-              text.length < 200 &&
-              (text.includes("Developer") ||
-                text.includes("Engineer") ||
-                text.includes("Designer") ||
-                text.includes("React") ||
-                text.includes("Frontend") ||
-                text.includes("Backend") ||
-                text.includes("Full Stack") ||
-                text.includes("Mobile") ||
-                text.includes("Web"))
-            ) {
-              if (text.length > maxLength) {
-                maxLength = text.length;
-                largestText = text;
-              }
-            }
-          });
-
-          if (largestText) fallbackData.title = largestText;
         }
+      }
 
-        // If we still don't have a description, look for the longest text block
-        if (!description || description === "Description not available") {
-          const allTexts = document.querySelectorAll("p, div, span");
-          let longestText = "";
-          let maxLength = 0;
-
-          allTexts.forEach((el) => {
-            const text = el.textContent.trim();
-            if (
-              text.length > 50 &&
-              text.length < 1000 &&
-              (text.includes("need") ||
-                text.includes("should") ||
-                text.includes("include") ||
-                text.includes("project") ||
-                text.includes("task") ||
-                text.includes("work"))
-            ) {
-              if (text.length > maxLength) {
-                maxLength = text.length;
-                longestText = text;
-              }
-            }
-          });
-
-          if (longestText) fallbackData.description = longestText;
-        }
-
-        return fallbackData;
-      };
-
-      const contentFallback = contentBasedExtraction();
-
-      // Additional fallback: Look for any text that might contain job info
-      const fallbackExtraction = () => {
-        const allText = document.body.textContent;
-
-        // Look for budget/rate patterns
-        const budgetPattern =
-          /(\$[\d,]+|\d+\s*(?:USD|EUR|GBP|hour|day|week|month))/gi;
-        const budgetMatch = allText.match(budgetPattern);
-
-        // Look for duration patterns
-        const durationPattern = /(\d+\s*(?:hour|day|week|month)s?)/gi;
-        const durationMatch = allText.match(durationPattern);
-
-        // Look for specific budget amounts mentioned in the new page structure
-        const specificBudgetPattern =
-          /(\$5|\$10|\$15|\$20|\$25|\$30|\$50|\$100)/gi;
-        const specificBudgetMatch = allText.match(specificBudgetPattern);
-
-        // Look for experience level patterns
-        const experiencePattern =
-          /(Entry Level|Intermediate|Expert|Beginner|Advanced)/gi;
-        const experienceMatch = allText.match(experiencePattern);
-
-        // Look for project length patterns
-        const projectLengthPattern =
-          /(Less than 1 month|1 to 3 months|3 to 6 months|6\+ months)/gi;
-        const projectLengthMatch = allText.match(projectLengthPattern);
-
-        // SUPER ROBUST FALLBACK - Extract ANY information that looks like job data
-        const extractAnyJobInfo = () => {
-          const jobInfo = {};
-
-          // Look for any currency amounts
-          const anyCurrencyPattern = /(\$[\d,]+|\€[\d,]+|\£[\d,]+)/gi;
-          const anyCurrency = allText.match(anyCurrencyPattern);
-          if (anyCurrency) jobInfo.budget = anyCurrency[0];
-
-          // Look for any time periods
-          const anyTimePattern = /(\d+\s*(?:hour|day|week|month|year)s?)/gi;
-          const anyTime = allText.match(anyTimePattern);
-          if (anyTime) jobInfo.duration = anyTime[0];
-
-          // Look for any experience indicators
-          const anyExperiencePattern =
-            /(Entry|Intermediate|Expert|Beginner|Advanced|Junior|Senior)/gi;
-          const anyExperience = allText.match(anyExperiencePattern);
-          if (anyExperience) jobInfo.experience = anyExperience[0];
-
-          // Look for any skills mentioned
-          const skillPattern =
-            /(React|JavaScript|Python|Java|CSS|HTML|Node\.js|Angular|Vue|PHP|Laravel|MySQL|MongoDB|AWS|Docker|Git)/gi;
-          const skills = allText.match(skillPattern);
-          if (skills) jobInfo.skills = [...new Set(skills)].slice(0, 5);
-
-          // Look for any dates
-          const datePattern =
-            /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/gi;
-          const dates = allText.match(datePattern);
-          if (dates) jobInfo.posted = dates[0];
-
-          return jobInfo;
-        };
-
-        const superFallback = extractAnyJobInfo();
-
-        return {
-          budget: budgetMatch
-            ? budgetMatch[0]
-            : specificBudgetMatch
-            ? specificBudgetMatch[0]
-            : superFallback.budget || "",
-          duration: durationMatch
-            ? durationMatch[0]
-            : projectLengthMatch
-            ? projectLengthMatch[0]
-            : superFallback.duration || "",
-          experience: experienceMatch
-            ? experienceMatch[0]
-            : superFallback.experience || "",
-          skills: superFallback.skills || [],
-          posted: superFallback.posted || "",
-        };
-      };
-
-      const fallback = fallbackExtraction();
-
-      // Use fallback values if primary extraction failed
-      const finalBudgetValue = finalBudget || fallback.budget;
-      const finalDuration = duration || fallback.duration;
-      const finalJobType = jobType || fallback.experience;
-      const finalTitle =
-        title || contentFallback.title || "Job Title (Extraction Failed)";
-      const finalDescription =
-        description ||
-        contentFallback.description ||
-        "Description extraction failed";
+      // 8. FINAL DATA ASSEMBLY
+      const finalTitle = title || "Job Title (Extraction Failed)";
+      const finalDescription = description || "Description extraction failed";
+      const finalBudget = budget || "Budget unknown";
+      const finalJobType = jobType || "Job type unknown";
+      const finalPosted = postedTime || "Posted time unknown";
       const finalSkills =
-        skills.length > 0
-          ? skills
-          : fallback.skills.length > 0
-          ? fallback.skills
-          : ["Skills extraction failed"];
-      const finalPosted =
-        postedTime || fallback.posted || "Posted time unknown";
+        skills.length > 0 ? skills : ["Skills extraction failed"];
 
       // Generate unique ID
-      const jobId = btoa(finalTitle + finalBudget + finalDuration).slice(0, 20);
+      const jobId = btoa(finalTitle + finalBudget + Date.now()).slice(0, 20);
 
       const jobData = {
         id: jobId,
         title: finalTitle,
         description: finalDescription,
-        jobType: finalJobType || "Job type not specified",
-        budget: finalBudgetValue || "Budget not specified",
-        duration: finalDuration || "Duration not specified",
+        jobType: finalJobType,
+        budget: finalBudget,
+        duration: "Duration not specified",
         skills: finalSkills,
         postedTime: finalPosted,
         timestamp: Date.now(),
@@ -2233,7 +1796,7 @@ class UpworkContentScript {
           ? `✅ Found (${finalDescription.length} chars)`
           : "❌ Missing"
       );
-      console.log("  - Budget:", finalBudgetValue ? "✅ Found" : "❌ Missing");
+      console.log("  - Budget:", finalBudget ? "✅ Found" : "❌ Missing");
       console.log("  - Job Type:", finalJobType ? "✅ Found" : "❌ Missing");
       console.log(
         "  - Skills:",
@@ -2241,6 +1804,7 @@ class UpworkContentScript {
           ? `✅ Found (${finalSkills.length} skills)`
           : "❌ Missing"
       );
+      console.log("  - Posted:", finalPosted ? "✅ Found" : "❌ Missing");
 
       return jobData;
     } catch (error) {
@@ -2249,11 +1813,12 @@ class UpworkContentScript {
         error
       );
 
-      // Return minimal data to prevent complete failure
+      // Return fallback data on error
       return {
-        id: "fallback-" + Date.now(),
+        id: "error-" + Date.now(),
         title: "Job Title (Extraction Failed)",
-        description: "Unable to extract description",
+        description:
+          "Description extraction failed due to error: " + error.message,
         jobType: "Job type unknown",
         budget: "Budget unknown",
         duration: "Duration unknown",
@@ -2269,102 +1834,116 @@ class UpworkContentScript {
     return this.jobData;
   }
 
-  // Test job extraction method for debugging
-  async testJobExtraction(sendResponse) {
-    try {
-      console.log("🧪 Testing job extraction on current page...");
+  testJobExtraction() {
+    console.log("🧪 Testing job extraction...");
 
-      // Test extraction from application page
+    try {
+      // Log page structure first
+      this.logPageStructure();
+
+      // Try to extract job data
       const jobData = this.extractJobDataFromApplicationPage();
 
-      if (jobData && jobData.title) {
-        console.log("✅ Test extraction successful!");
-        console.log("📋 Extracted job data:", jobData);
+      console.log("🧪 Test extraction result:", jobData);
 
-        sendResponse({
-          success: true,
-          message: "Job extraction test completed successfully",
-          jobData: jobData,
-        });
-      } else {
-        console.log("❌ Test extraction failed - no job data found");
-        sendResponse({
-          success: false,
-          error: "No job data could be extracted from the current page",
-        });
-      }
+      // Validate the extracted data
+      const validation = {
+        title:
+          jobData.title && jobData.title !== "Job Title (Extraction Failed)",
+        description:
+          jobData.description &&
+          jobData.description !== "Description extraction failed",
+        budget: jobData.budget && jobData.budget !== "Budget unknown",
+        jobType: jobData.jobType && jobData.jobType !== "Job type unknown",
+        posted:
+          jobData.postedTime && jobData.postedTime !== "Posted time unknown",
+        skills:
+          jobData.skills &&
+          jobData.skills.length > 0 &&
+          !jobData.skills.includes("Skills extraction failed"),
+      };
+
+      console.log("🧪 Data validation:", validation);
+
+      const successCount = Object.values(validation).filter(Boolean).length;
+      const totalFields = Object.keys(validation).length;
+
+      console.log(
+        `🧪 Extraction success rate: ${successCount}/${totalFields} (${Math.round(
+          (successCount / totalFields) * 100
+        )}%)`
+      );
+
+      return {
+        success: successCount > 0,
+        data: jobData,
+        validation: validation,
+        successRate: `${successCount}/${totalFields}`,
+        message:
+          successCount === totalFields
+            ? "Perfect extraction!"
+            : successCount > totalFields / 2
+            ? "Good extraction with some missing data"
+            : "Poor extraction - most data missing",
+      };
     } catch (error) {
-      console.error("❌ Error during test extraction:", error);
-      sendResponse({
+      console.error("🧪 Test extraction failed:", error);
+      return {
         success: false,
-        error: error.message || "Unknown error during extraction",
-      });
+        error: error.message,
+        data: null,
+      };
     }
   }
 
   // Log page structure for debugging
   logPageStructure() {
-    console.log("🔍 Page structure analysis:");
-
-    // Log all elements with data-test attributes
-    const dataTestElements = document.querySelectorAll("[data-test]");
+    console.log("🔍 Page Structure Analysis:");
+    console.log("  - URL:", window.location.href);
+    console.log("  - Title:", document.title);
     console.log(
-      "📋 Elements with data-test attributes:",
-      dataTestElements.length
+      "  - Headings:",
+      document.querySelectorAll("h1, h2, h3, h4, h5, h6").length
     );
-    dataTestElements.forEach((el) => {
-      console.log(
-        `  - [data-test="${el.getAttribute("data-test")}"]:`,
-        el.textContent.trim().substring(0, 100)
-      );
-    });
+    console.log("  - Paragraphs:", document.querySelectorAll("p").length);
+    console.log("  - Divs:", document.querySelectorAll("div").length);
+    console.log("  - Spans:", document.querySelectorAll("span").length);
 
-    // Log all elements with class containing 'description'
-    const descriptionElements = document.querySelectorAll(
-      '[class*="description"]'
-    );
-    console.log(
-      '📋 Elements with class containing "description":',
-      descriptionElements.length
-    );
-    descriptionElements.forEach((el) => {
-      console.log(
-        `  - [class*="description"]:`,
-        el.textContent.trim().substring(0, 100)
-      );
-    });
-
-    // Log all elements with class containing 'content'
-    const contentElements = document.querySelectorAll('[class*="content"]');
-    console.log(
-      '📋 Elements with class containing "content":',
-      contentElements.length
-    );
-    contentElements.forEach((el) => {
-      console.log(
-        `  - [class*="content"]:`,
-        el.textContent.trim().substring(0, 100)
-      );
-    });
-
-    // Log all heading elements
+    // Log all headings
     const headings = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
-    console.log("📋 Heading elements:", headings.length);
-    headings.forEach((el) => {
-      console.log(
-        `  - ${el.tagName}:`,
-        el.textContent.trim().substring(0, 100)
-      );
+    console.log("  - Heading texts:");
+    headings.forEach((h, i) => {
+      console.log(`    ${i + 1}. ${h.tagName}: "${h.textContent.trim()}"`);
     });
 
-    // Log all paragraph elements
-    const paragraphs = document.querySelectorAll("p");
-    console.log("📋 Paragraph elements:", paragraphs.length);
-    paragraphs.forEach((el) => {
+    // Log potential job description elements
+    const descElements = document.querySelectorAll(
+      '[class*="description"], [class*="content"], [class*="body"]'
+    );
+    console.log("  - Potential description elements:", descElements.length);
+    descElements.forEach((el, i) => {
       const text = el.textContent.trim();
       if (text.length > 50) {
-        console.log(`  - <p>:`, text.substring(0, 100));
+        console.log(
+          `    ${i + 1}. ${el.tagName}[${el.className}]: "${text.substring(
+            0,
+            100
+          )}..."`
+        );
       }
+    });
+
+    // Log potential budget elements
+    const budgetElements = document.querySelectorAll(
+      '[class*="budget"], [class*="rate"], [class*="amount"], [class*="price"]'
+    );
+    console.log("  - Potential budget elements:", budgetElements.length);
+    budgetElements.forEach((el, i) => {
+      console.log(
+        `    ${i + 1}. ${el.tagName}[${
+          el.className
+        }]: "${el.textContent.trim()}"`
+      );
     });
   }
 }

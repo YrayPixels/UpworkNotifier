@@ -7,533 +7,868 @@ class PopupManager {
   }
 
   init() {
+    console.log("🔧 Initializing PopupManager...");
+
+    // Cache all elements
     this.cacheElements();
-    this.bindEvents();
-    this.loadSettings();
-    this.checkPermissions();
+
+    // Check if all critical elements are present
+    const criticalElements = [
+      "status",
+      "lastCheck",
+      "jobsTracked",
+      "notificationToggle",
+      "emailToggle",
+      "aiToggle",
+      "checkInterval",
+      "emailAddress",
+      "aiProvider",
+      "openaiApiKey",
+      "testOpenAIKey",
+      "clearOpenAIKey",
+      "openAIKeyStatus",
+      "geminiApiKey",
+      "testGeminiKey",
+      "clearGeminiKey",
+      "geminiKeyStatus",
+      "validateAI",
+      "checkNow",
+      "saveSettings",
+      "testExtraction",
+      "checkContentScript",
+      "validateAndSave",
+      "message",
+    ];
+
+    const missingElements = criticalElements.filter((id) => !this.elements[id]);
+
+    if (missingElements.length === 0) {
+      console.log(
+        "✅ All critical elements found, proceeding with initialization"
+      );
+      this.loadSettings();
+      this.bindEvents();
+      this.updateUI();
+    } else {
+      console.error("❌ Missing elements:", missingElements);
+      this.showMessage(
+        "Error: Some UI elements failed to load. Please refresh the popup.",
+        "error"
+      );
+    }
   }
 
   cacheElements() {
-    this.elements = {
-      status: document.getElementById('status'),
-      lastCheck: document.getElementById('lastCheck'),
-      jobsTracked: document.getElementById('jobsTracked'),
-      notificationToggle: document.getElementById('notificationToggle'),
-      emailToggle: document.getElementById('emailToggle'),
-      aiToggle: document.getElementById('aiToggle'),
-      checkInterval: document.getElementById('checkInterval'),
-      emailAddress: document.getElementById('emailAddress'),
-      openaiApiKey: document.getElementById('openaiApiKey'),
-      testApiKey: document.getElementById('testApiKey'),
-      clearApiKey: document.getElementById('clearApiKey'),
-      apiKeyStatus: document.getElementById('apiKeyStatus'),
-      checkNow: document.getElementById('checkNow'),
-      saveSettings: document.getElementById('saveSettings'),
-      testExtraction: document.getElementById('testExtraction'),
-      loading: document.getElementById('loading'),
-      message: document.getElementById('message')
-    };
+    console.log("🔍 Caching elements...");
+
+    const elementIds = [
+      "status",
+      "lastCheck",
+      "jobsTracked",
+      "notificationToggle",
+      "emailToggle",
+      "aiToggle",
+      "checkInterval",
+      "emailAddress",
+      "aiProvider",
+      "openaiApiKey",
+      "testOpenAIKey",
+      "clearOpenAIKey",
+      "openAIKeyStatus",
+      "geminiApiKey",
+      "testGeminiKey",
+      "clearGeminiKey",
+      "geminiKeyStatus",
+      "validateAI",
+      "checkNow",
+      "saveSettings",
+      "testExtraction",
+      "checkContentScript",
+      "validateAndSave",
+      "message",
+    ];
+
+    elementIds.forEach((id) => {
+      this.elements[id] = document.getElementById(id);
+      if (this.elements[id]) {
+        console.log(`  ✅ ${id}: Found`);
+      } else {
+        console.log(`  ❌ ${id}: Missing`);
+      }
+    });
   }
 
   bindEvents() {
+    console.log("🔗 Binding event listeners...");
+
     // Toggle switches
-    this.elements.notificationToggle.addEventListener('click', () => {
-      this.toggleSwitch(this.elements.notificationToggle);
-      this.updateSettings();
-    });
+    if (this.elements.notificationToggle) {
+      this.elements.notificationToggle.addEventListener("click", async () => {
+        this.settings.notificationsEnabled =
+          !this.settings.notificationsEnabled;
+        this.updateToggleUI(
+          "notificationToggle",
+          this.settings.notificationsEnabled
+        );
+        console.log(
+          "🔄 Notifications toggled:",
+          this.settings.notificationsEnabled
+        );
+        await this.forceSaveSettings(); // Force save immediately
+      });
+    }
 
-    this.elements.emailToggle.addEventListener('click', () => {
-      this.toggleSwitch(this.elements.emailToggle);
-      this.updateSettings();
-    });
+    if (this.elements.emailToggle) {
+      this.elements.emailToggle.addEventListener("click", async () => {
+        this.settings.emailEnabled = !this.settings.emailEnabled;
+        this.updateToggleUI("emailToggle", this.settings.emailEnabled);
+        console.log("🔄 Email toggled:", this.settings.emailEnabled);
+        await this.forceSaveSettings(); // Force save immediately
+      });
+    }
 
-    this.elements.aiToggle.addEventListener('click', () => {
-      this.toggleSwitch(this.elements.aiToggle);
-      this.updateSettings();
-    });
+    if (this.elements.aiToggle) {
+      this.elements.aiToggle.addEventListener("click", async () => {
+        this.settings.aiEnabled = !this.settings.aiEnabled;
+        this.updateToggleUI("aiToggle", this.settings.aiEnabled);
+        console.log("🔄 AI proposals toggled:", this.settings.aiEnabled);
 
-    // Buttons
-    this.elements.checkNow.addEventListener('click', () => {
-      this.checkNow();
-    });
+        // Validate API key configuration when enabling
+        if (this.settings.aiEnabled) {
+          const hasOpenAIKey =
+            this.settings.openaiApiKey &&
+            this.settings.openaiApiKey.trim() !== "";
+          const hasGeminiKey =
+            this.settings.geminiApiKey &&
+            this.settings.geminiApiKey.trim() !== "";
 
-    this.elements.saveSettings.addEventListener('click', () => {
-      this.saveSettings();
-    });
+          if (!hasOpenAIKey && !hasGeminiKey) {
+            this.showMessage(
+              "⚠️ Please add an API key before enabling AI proposals!",
+              "error"
+            );
+            // Revert the toggle
+            this.settings.aiEnabled = false;
+            this.updateToggleUI("aiToggle", false);
+            return;
+          }
+        }
 
-    this.elements.testExtraction.addEventListener("click", () => {
-      this.testExtraction();
-    });
+        await this.forceSaveSettings(); // Force save immediately
+      });
+    }
 
     // Form inputs
-    this.elements.checkInterval.addEventListener('change', () => {
-      this.updateSettings();
-    });
+    if (this.elements.checkInterval) {
+      this.elements.checkInterval.addEventListener("change", (e) => {
+        this.settings.checkInterval = parseFloat(e.target.value);
+      });
+    }
 
-    this.elements.emailAddress.addEventListener('input', () => {
-      this.updateSettings();
-    });
+    if (this.elements.emailAddress) {
+      this.elements.emailAddress.addEventListener("input", (e) => {
+        this.settings.emailAddress = e.target.value;
+      });
+    }
 
-    this.elements.openaiApiKey.addEventListener('input', () => {
-      this.updateSettings();
-    });
+    if (this.elements.openaiApiKey) {
+      this.elements.openaiApiKey.addEventListener("input", (e) => {
+        this.settings.openaiApiKey = e.target.value;
+      });
+    }
 
-    // Test API key button
-    this.elements.testApiKey.addEventListener('click', () => {
-      this.testApiKey();
-    });
+    if (this.elements.geminiApiKey) {
+      this.elements.geminiApiKey.addEventListener("input", (e) => {
+        this.settings.geminiApiKey = e.target.value;
+      });
+    }
 
-    // Clear API key button
-    this.elements.clearApiKey.addEventListener('click', () => {
-      this.clearApiKey();
-    });
+    // AI Provider selection
+    if (this.elements.aiProvider) {
+      this.elements.aiProvider.addEventListener("change", (e) => {
+        this.settings.aiProvider = e.target.value;
+        this.updateAIProviderUI();
+        this.updateAIConfigStatus(); // Update status when provider changes
+        console.log("🔄 AI provider changed to:", this.settings.aiProvider);
+      });
+    }
+
+    // Buttons
+    if (this.elements.checkNow) {
+      this.elements.checkNow.addEventListener("click", () => {
+        this.checkForNewJobs();
+      });
+    }
+
+    if (this.elements.saveSettings) {
+      this.elements.saveSettings.addEventListener("click", () => {
+        this.saveSettings();
+      });
+    }
+
+    if (this.elements.testExtraction) {
+      this.elements.testExtraction.addEventListener("click", () => {
+        this.testExtraction();
+      });
+    }
+
+    if (this.elements.checkContentScript) {
+      this.elements.checkContentScript.addEventListener("click", () => {
+        this.checkContentScriptStatus();
+      });
+    }
+
+    // API Key testing
+    if (this.elements.testOpenAIKey) {
+      this.elements.testOpenAIKey.addEventListener("click", () => {
+        this.testOpenAIKey();
+      });
+    }
+
+    if (this.elements.clearOpenAIKey) {
+      this.elements.clearOpenAIKey.addEventListener("click", () => {
+        this.clearOpenAIKey();
+      });
+    }
+
+    if (this.elements.testGeminiKey) {
+      this.elements.testGeminiKey.addEventListener("click", () => {
+        this.testGeminiKey();
+      });
+    }
+
+    if (this.elements.clearGeminiKey) {
+      this.elements.clearGeminiKey.addEventListener("click", () => {
+        this.clearGeminiKey();
+      });
+    }
+
+    if (this.elements.validateAI) {
+      this.elements.validateAI.addEventListener("click", () => {
+        this.validateAIConfiguration();
+      });
+    }
+
+    if (this.elements.validateAndSave) {
+      this.elements.validateAndSave.addEventListener("click", () => {
+        this.validateAndSaveSettings();
+      });
+    }
+
+    console.log("✅ Event listeners bound successfully");
+  }
+
+  updateAIProviderUI() {
+    const openaiSection = document.getElementById("openaiSection");
+    const geminiSection = document.getElementById("geminiSection");
+
+    if (!openaiSection || !geminiSection) {
+      console.error("❌ AI provider sections not found");
+      return;
+    }
+
+    if (this.settings.aiProvider === "gemini") {
+      openaiSection.style.display = "none";
+      geminiSection.style.display = "block";
+      console.log("🔄 Switched to Gemini provider");
+    } else {
+      openaiSection.style.display = "block";
+      geminiSection.style.display = "none";
+      console.log("🔄 Switched to OpenAI provider");
+    }
+  }
+
+  async checkContentScriptStatus() {
+    try {
+      this.showMessage("Checking content script status...", "info");
+      const status = await this._getContentScriptStatus();
+
+      if (status.loaded) {
+        this.showMessage("✅ Content script is loaded and ready!", "success");
+        console.log("✅ Content script status:", status);
+      } else {
+        this.showMessage(
+          `❌ Content script not ready: ${status.error}`,
+          "error"
+        );
+        console.log("❌ Content script status:", status);
+      }
+    } catch (error) {
+      console.error("❌ Error checking content script status:", error);
+      this.showMessage("Error checking content script status!", "error");
+    }
+  }
+
+  async _getContentScriptStatus() {
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      if (!tab || !tab.url.includes("upwork.com")) {
+        return { loaded: false, error: "Not on Upwork page" };
+      }
+
+      const result = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: () => {
+          return {
+            hasTestFunction: typeof window.testJobExtraction === "function",
+            hasExtractFunction:
+              typeof window.extractJobDataFromApplicationPage === "function",
+            url: window.location.href,
+            title: document.title,
+          };
+        },
+      });
+
+      if (result && result[0] && result[0].result) {
+        return { loaded: true, ...result[0].result };
+      }
+      return { loaded: false, error: "Failed to check content script" };
+    } catch (error) {
+      return { loaded: false, error: error.message };
+    }
+  }
+
+  updateToggleUI(toggleId, isActive) {
+    const toggle = this.elements[toggleId];
+    if (toggle) {
+      if (isActive) {
+        toggle.classList.add("active");
+      } else {
+        toggle.classList.remove("active");
+      }
+    }
   }
 
   async loadSettings() {
     try {
-      const response = await chrome.runtime.sendMessage({ action: 'getStatus' });
-      
-      if (response) {
-        this.settings = response;
-        this.updateUI();
-      }
+      const result = await chrome.storage.sync.get([
+        "notificationsEnabled",
+        "emailEnabled",
+        "aiEnabled",
+        "checkInterval",
+        "emailAddress",
+        "aiProvider",
+        "openaiApiKey",
+        "geminiApiKey",
+      ]);
+
+      this.settings = {
+        notificationsEnabled: result.notificationsEnabled ?? true,
+        emailEnabled: result.emailEnabled ?? false,
+        aiEnabled: result.aiEnabled ?? false,
+        checkInterval: result.checkInterval ?? 5,
+        emailAddress: result.emailAddress ?? "",
+        aiProvider: result.aiProvider ?? "openai",
+        openaiApiKey: result.openaiApiKey ?? "",
+        geminiApiKey: result.geminiApiKey ?? "",
+      };
+
+      console.log("📥 Settings loaded:", this.settings);
     } catch (error) {
-      console.error('Error loading settings:', error);
-      this.showMessage('Error loading settings', 'error');
+      console.error("❌ Error loading settings:", error);
+      this.settings = {
+        notificationsEnabled: true,
+        emailEnabled: false,
+        aiEnabled: false,
+        checkInterval: 5,
+        emailAddress: "",
+        aiProvider: "openai",
+        openaiApiKey: "",
+        geminiApiKey: "",
+      };
     }
   }
 
   updateUI() {
-    // Update status
-    this.elements.status.textContent = this.settings.isEnabled ? 'Active' : 'Inactive';
-    this.elements.status.style.color = this.settings.isEnabled ? '#28a745' : '#dc3545';
-
-    // Update last check time
-    if (this.settings.lastCheckedCount !== undefined) {
-      this.elements.jobsTracked.textContent = this.settings.lastCheckedCount;
-    }
-
     // Update toggle switches
-    this.updateToggleSwitch(this.elements.notificationToggle, this.settings.isEnabled);
-    this.updateToggleSwitch(this.elements.emailToggle, this.settings.emailSettings?.enabled || false);
-    this.updateToggleSwitch(this.elements.aiToggle, this.settings.openAISettings?.enabled || false);
+    this.updateToggleUI(
+      "notificationToggle",
+      this.settings.notificationsEnabled
+    );
+    this.updateToggleUI("emailToggle", this.settings.emailEnabled);
+    this.updateToggleUI("aiToggle", this.settings.aiEnabled);
 
     // Update form inputs
-    if (this.settings.checkInterval) {
-      this.elements.checkInterval.value = Math.floor(this.settings.checkInterval / (60 * 1000));
+    if (this.elements.checkInterval) {
+      this.elements.checkInterval.value = this.settings.checkInterval;
+    }
+    if (this.elements.emailAddress) {
+      this.elements.emailAddress.value = this.settings.emailAddress;
+    }
+    if (this.elements.openaiApiKey) {
+      this.elements.openaiApiKey.value = this.settings.openaiApiKey;
+    }
+    if (this.elements.geminiApiKey) {
+      this.elements.geminiApiKey.value = this.settings.geminiApiKey;
+    }
+    if (this.elements.aiProvider) {
+      this.elements.aiProvider.value = this.settings.aiProvider;
     }
 
-    if (this.settings.emailSettings?.email) {
-      this.elements.emailAddress.value = this.settings.emailSettings.email;
-    }
+    // Update AI provider UI
+    this.updateAIProviderUI();
 
-    if (this.settings.openAISettings?.apiKey) {
-      this.elements.openaiApiKey.value = this.settings.openAISettings.apiKey;
-    }
+    // Show AI configuration status
+    this.updateAIConfigStatus();
+
+    // Load status
+    this.loadStatus();
   }
 
-  updateToggleSwitch(element, isActive) {
-    if (isActive) {
-      element.classList.add('active');
-    } else {
-      element.classList.remove('active');
-    }
-  }
+  updateAIConfigStatus() {
+    if (!this.elements.validateAI) return;
 
-  toggleSwitch(element) {
-    element.classList.toggle('active');
-  }
+    const hasOpenAIKey =
+      this.settings.openaiApiKey && this.settings.openaiApiKey.trim() !== "";
+    const hasGeminiKey =
+      this.settings.geminiApiKey && this.settings.geminiApiKey.trim() !== "";
 
-  async updateSettings() {
-    const isEnabled = this.elements.notificationToggle.classList.contains('active');
-    const emailEnabled = this.elements.emailToggle.classList.contains('active');
-    const aiEnabled = this.elements.aiToggle.classList.contains('active');
-    const checkInterval = parseInt(this.elements.checkInterval.value) * 60 * 1000; // Convert to milliseconds
-    const emailAddress = this.elements.emailAddress.value;
-    const openaiApiKey = this.elements.openaiApiKey.value;
-
-    this.settings = {
-      ...this.settings,
-      isEnabled,
-      checkInterval,
-      emailSettings: {
-        ...this.settings.emailSettings,
-        enabled: emailEnabled,
-        email: emailAddress
-      },
-      openAISettings: {
-        ...this.settings.openAISettings,
-        enabled: aiEnabled,
-        apiKey: openaiApiKey
+    if (this.settings.aiEnabled) {
+      if (this.settings.aiProvider === "openai" && hasOpenAIKey) {
+        this.elements.validateAI.textContent = "✅ OpenAI Ready";
+        this.elements.validateAI.className = "btn btn-secondary btn-small";
+        this.elements.validateAI.style.background = "#28a745";
+        this.elements.validateAI.style.color = "white";
+      } else if (this.settings.aiProvider === "gemini" && hasGeminiKey) {
+        this.elements.validateAI.textContent = "✅ Gemini Ready";
+        this.elements.validateAI.className = "btn btn-secondary btn-small";
+        this.elements.validateAI.style.background = "#28a745";
+        this.elements.validateAI.style.color = "white";
+      } else {
+        this.elements.validateAI.textContent = "⚠️ Config Invalid";
+        this.elements.validateAI.className = "btn btn-secondary btn-small";
+        this.elements.validateAI.style.background = "#dc3545";
+        this.elements.validateAI.style.color = "white";
       }
-    };
+    } else {
+      this.elements.validateAI.textContent = "🔍 Validate AI Config";
+      this.elements.validateAI.className = "btn btn-secondary btn-small";
+      this.elements.validateAI.style.background = "";
+      this.elements.validateAI.style.color = "";
+    }
+  }
+
+  async loadStatus() {
+    try {
+      const result = await chrome.runtime.sendMessage({ action: "getStatus" });
+      if (result && result.success && result.data) {
+        const data = result.data;
+
+        // Update status display
+        if (this.elements.status) {
+          this.elements.status.textContent = data.isEnabled
+            ? "Running"
+            : "Stopped";
+        }
+        if (this.elements.lastCheck) {
+          this.elements.lastCheck.textContent = data.lastCheck || "Never";
+        }
+        if (this.elements.jobsTracked) {
+          this.elements.jobsTracked.textContent = data.jobsTracked || "0";
+        }
+
+        // Update settings from background script
+        if (data.openAISettings) {
+          this.settings.aiEnabled = data.openAISettings.enabled || false;
+          this.settings.aiProvider = data.openAISettings.provider || "openai";
+          this.settings.openaiApiKey = data.openAISettings.apiKey || "";
+          this.settings.geminiApiKey = data.openAISettings.geminiApiKey || "";
+        }
+
+        if (data.emailSettings) {
+          this.settings.emailEnabled = data.emailSettings.enabled || false;
+          this.settings.emailAddress = data.emailSettings.email || "";
+        }
+
+        // Update UI to reflect current settings
+        this.updateToggleUI("aiToggle", this.settings.aiEnabled);
+        this.updateToggleUI("emailToggle", this.settings.emailEnabled);
+        this.updateAIProviderUI();
+        this.updateAIConfigStatus();
+
+        console.log("📊 Status loaded and UI updated:", this.settings);
+      }
+    } catch (error) {
+      console.error("❌ Error loading status:", error);
+    }
+  }
+
+  async refreshSettingsFromStorage() {
+    try {
+      const result = await chrome.storage.sync.get([
+        "notificationsEnabled",
+        "emailEnabled",
+        "aiEnabled",
+        "checkInterval",
+        "emailAddress",
+        "aiProvider",
+        "openaiApiKey",
+        "geminiApiKey",
+      ]);
+
+      // Update local settings
+      this.settings = {
+        notificationsEnabled: result.notificationsEnabled ?? true,
+        emailEnabled: result.emailEnabled ?? false,
+        aiEnabled: result.aiEnabled ?? false,
+        checkInterval: result.checkInterval ?? 5,
+        emailAddress: result.emailAddress ?? "",
+        aiProvider: result.aiProvider ?? "openai",
+        openaiApiKey: result.openaiApiKey ?? "",
+        geminiApiKey: result.geminiApiKey ?? "",
+      };
+
+      console.log("🔄 Settings refreshed from storage:", this.settings);
+
+      // Update UI
+      this.updateUI();
+
+      return true;
+    } catch (error) {
+      console.error("❌ Error refreshing settings:", error);
+      return false;
+    }
+  }
+
+  async forceSaveSettings() {
+    try {
+      // Save to chrome storage
+      await chrome.storage.sync.set(this.settings);
+      console.log("💾 Settings force-saved:", this.settings);
+
+      // Send to background script
+      await chrome.runtime.sendMessage({
+        action: "updateSettings",
+        settings: this.settings,
+      });
+
+      // Refresh settings from storage to confirm
+      await this.refreshSettingsFromStorage();
+
+      this.showMessage("Settings saved and active!", "success");
+      return true;
+    } catch (error) {
+      console.error("❌ Error force-saving settings:", error);
+      this.showMessage("Error saving settings!", "error");
+      return false;
+    }
   }
 
   async saveSettings() {
     try {
-      this.showLoading(true);
-      
-      await this.updateSettings();
-      
-      const response = await chrome.runtime.sendMessage({
-        action: 'updateSettings',
-        checkInterval: this.settings.checkInterval,
-        emailSettings: this.settings.emailSettings,
-        openAISettings: this.settings.openAISettings
+      await chrome.storage.sync.set(this.settings);
+      console.log("💾 Settings saved successfully");
+
+      // Send settings to background script
+      await chrome.runtime.sendMessage({
+        action: "updateSettings",
+        settings: this.settings,
       });
 
-      if (response && response.success) {
-        this.showMessage('Settings saved successfully!', 'success');
-        // Clear API key status after saving
-        this.elements.apiKeyStatus.textContent = '';
-        this.elements.apiKeyStatus.className = '';
-      } else {
-        this.showMessage('Error saving settings', 'error');
-      }
+      this.showMessage("Settings saved successfully!", "success");
+      return true;
     } catch (error) {
-      console.error('Error saving settings:', error);
-      this.showMessage('Error saving settings', 'error');
-    } finally {
-      this.showLoading(false);
+      console.error("❌ Error saving settings:", error);
+      this.showMessage("Error saving settings!", "error");
+      return false;
     }
   }
 
-  async testApiKey() {
-    const apiKey = this.elements.openaiApiKey.value.trim();
-    
-    if (!apiKey) {
-      this.showApiKeyStatus('Please enter an API key first', 'error');
-      return;
-    }
-
-    if (!apiKey.startsWith('sk-')) {
-      this.showApiKeyStatus('Invalid API key format. Should start with "sk-"', 'error');
-      return;
-    }
-
+  async checkForNewJobs() {
     try {
-      this.elements.testApiKey.disabled = true;
-      this.elements.testApiKey.textContent = '🧪 Testing...';
-      this.showApiKeyStatus('Testing API key...', 'info');
-      
-      const response = await chrome.runtime.sendMessage({
-        action: 'testApiKey',
-        apiKey: apiKey
-      });
-
-      if (response && response.success) {
-        this.showApiKeyStatus('✅ API key is valid!', 'success');
-        this.elements.testApiKey.textContent = '✅ Valid';
-        this.elements.testApiKey.style.background = '#28a745';
-        this.elements.testApiKey.style.color = 'white';
-        
-        // Reset button after 3 seconds
-        setTimeout(() => {
-          this.elements.testApiKey.textContent = '🧪 Test API Key';
-          this.elements.testApiKey.style.background = '';
-          this.elements.testApiKey.style.color = '';
-          this.elements.testApiKey.disabled = false;
-        }, 3000);
+      this.showMessage("Checking for new jobs...", "info");
+      const result = await chrome.runtime.sendMessage({ action: "checkNow" });
+      if (result.success) {
+        this.showMessage(`Found ${result.data.count} new jobs!`, "success");
       } else {
-        this.showApiKeyStatus('❌ API key test failed: ' + (response?.error || 'Unknown error'), 'error');
-        this.elements.testApiKey.textContent = '❌ Failed';
-        this.elements.testApiKey.style.background = '#dc3545';
-        this.elements.testApiKey.style.color = 'white';
-        
-        // Reset button after 3 seconds
-        setTimeout(() => {
-          this.elements.testApiKey.textContent = '🧪 Test API Key';
-          this.elements.testApiKey.style.background = '';
-          this.elements.testApiKey.style.color = '';
-          this.elements.testApiKey.disabled = false;
-        }, 3000);
+        this.showMessage("No new jobs found.", "info");
       }
     } catch (error) {
-      console.error('Error testing API key:', error);
-      this.showApiKeyStatus('❌ Error testing API key: ' + error.message, 'error');
-      this.elements.testApiKey.textContent = '🧪 Test API Key';
-      this.elements.testApiKey.disabled = false;
-    }
-  }
-
-  showApiKeyStatus(message, type) {
-    this.elements.apiKeyStatus.textContent = message;
-    this.elements.apiKeyStatus.className = type;
-    
-    // Clear status after 5 seconds for success/info, keep error messages longer
-    if (type !== 'error') {
-      setTimeout(() => {
-        this.elements.apiKeyStatus.textContent = '';
-        this.elements.apiKeyStatus.className = '';
-      }, 5000);
-    }
-  }
-
-  clearApiKey() {
-    this.elements.openaiApiKey.value = '';
-    this.elements.apiKeyStatus.textContent = '';
-    this.elements.apiKeyStatus.className = '';
-    this.showMessage('API key cleared', 'success');
-    
-    // Update settings to disable AI proposals if API key is cleared
-    if (this.settings.openAISettings?.enabled) {
-      this.elements.aiToggle.classList.remove('active');
-      this.updateSettings();
+      console.error("❌ Error checking for jobs:", error);
+      this.showMessage("Error checking for jobs!", "error");
     }
   }
 
   async testExtraction() {
     try {
-      this.showLoading(true);
-      this.elements.testExtraction.disabled = true;
-      this.elements.testExtraction.textContent = '🧪 Testing...';
-      
-      // Get the current active tab
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      console.log('🔍 Current tab:', {
-        id: tab.id,
-        url: tab.url,
-        title: tab.title,
-        status: tab.status
+      this.showMessage("Testing job extraction...", "info");
+
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
       });
-      
-      if (!tab.url.includes('upwork.com')) {
-        this.showMessage('Please navigate to an Upwork job page first', 'error');
+      if (!tab) {
+        this.showMessage("No active tab found!", "error");
         return;
       }
-      
-      // Check if we can access the tab
-      if (tab.status !== 'complete') {
-        this.showMessage('Page is still loading. Please wait for the page to fully load and try again.', 'error');
+
+      // Check if we're on an Upwork page
+      if (!tab.url.includes("upwork.com")) {
+        this.showMessage(
+          "Please navigate to an Upwork job page first!",
+          "error"
+        );
         return;
       }
-      
-      // Check if content script is loaded by trying to inject it first
+
+      // First, try to inject the content script
       try {
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['content.js']
+          files: ["content.js"],
         });
-        console.log('✅ Content script injected successfully');
+        console.log("✅ Content script injected successfully");
       } catch (injectError) {
-        console.log('⚠️ Content script injection failed, trying direct message...');
+        console.log("⚠️ Content script injection failed:", injectError);
+        // Continue anyway - the script might already be loaded
       }
-      
+
       // Wait a moment for the script to initialize
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Try to send message to content script
-      let response;
-      try {
-        response = await chrome.tabs.sendMessage(tab.id, { action: 'testExtraction' });
-      } catch (messageError) {
-        if (messageError.message.includes('Receiving end does not exist')) {
-          // Content script not loaded, try to inject and retry
-          console.log('🔄 Content script not loaded, injecting and retrying...');
-          
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Try to execute the test function
+      const result = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: () => {
           try {
-            await chrome.scripting.executeScript({
-              target: { tabId: tab.id },
-              files: ['content.js']
-            });
-            
-            // Wait for script to initialize
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Try again
-            response = await chrome.tabs.sendMessage(tab.id, { action: 'testExtraction' });
-          } catch (retryError) {
-            throw new Error('Failed to load content script after retry: ' + retryError.message);
+            // Check if the content script is loaded
+            if (typeof window.testJobExtraction === "function") {
+              console.log("🧪 Running testJobExtraction...");
+              return window.testJobExtraction();
+            } else {
+              console.log("❌ testJobExtraction function not found");
+              return {
+                error:
+                  "Content script not loaded - testJobExtraction function missing",
+              };
+            }
+          } catch (error) {
+            console.error("❌ Error in test function:", error);
+            return { error: `Execution error: ${error.message}` };
+          }
+        },
+      });
+
+      if (result && result[0] && result[0].result) {
+        const data = result[0].result;
+        if (data.error) {
+          this.showMessage(`Extraction failed: ${data.error}`, "error");
+          console.error("❌ Extraction error:", data.error);
+        } else if (data.success) {
+          this.showMessage(
+            `✅ ${data.message} Success rate: ${data.successRate}`,
+            "success"
+          );
+          console.log("✅ Extraction successful:", data);
+
+          // Show detailed results
+          if (data.data) {
+            console.log("📋 Extracted Job Data:");
+            console.log("  - Title:", data.data.title);
+            console.log("  - Budget:", data.data.budget);
+            console.log("  - Job Type:", data.data.jobType);
+            console.log("  - Posted:", data.data.postedTime);
+            console.log("  - Skills:", data.data.skills);
+            console.log(
+              "  - Description length:",
+              data.data.description ? data.data.description.length : 0
+            );
           }
         } else {
-          throw messageError;
+          this.showMessage(
+            `Extraction completed but with issues: ${data.message}`,
+            "info"
+          );
+          console.log("⚠️ Extraction with issues:", data);
         }
-      }
-      
-      if (response && response.success) {
-        this.showMessage('Job extraction test completed! Check console for details.', 'success');
       } else {
-        this.showMessage('Job extraction test failed: ' + (response?.error || 'Unknown error'), 'error');
+        this.showMessage("Failed to execute extraction test", "error");
+        console.error("❌ No result from extraction test");
       }
     } catch (error) {
-      console.error('Error testing extraction:', error);
-      
-      let userMessage = 'Error testing extraction: ' + error.message;
-      
+      console.error("❌ Error testing extraction:", error);
+
       // Provide more helpful error messages
-      if (error.message.includes('Receiving end does not exist')) {
-        userMessage = 'Content script not loaded. Please refresh the page and try again.';
-      } else if (error.message.includes('Cannot access')) {
-        userMessage = 'Cannot access this page. Please ensure you are on an Upwork job page.';
-      } else if (error.message.includes('Failed to load content script')) {
-        userMessage = 'Failed to load extension script. Please refresh the page and try again.';
+      let userMessage = "Error testing extraction!";
+      if (error.message.includes("Cannot access")) {
+        userMessage =
+          "Cannot access this page. Please ensure you are on an Upwork job page.";
+      } else if (error.message.includes("Failed to load content script")) {
+        userMessage =
+          "Failed to load extension script. Please refresh the page and try again.";
+      } else if (error.message.includes("Receiving end does not exist")) {
+        userMessage =
+          "Content script not loaded. Please refresh the page and try again.";
       }
-      
-      this.showMessage(userMessage, 'error');
-      
-      // Try alternative approach - inject script directly and execute
-      console.log('🔄 Trying alternative approach with direct script injection...');
-      try {
-        const result = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: this.performExtractionTest
-        });
-        
-        if (result && result[0] && result[0].result) {
-          this.showMessage('Alternative extraction test completed! Check console for details.', 'success');
-          console.log('✅ Alternative extraction result:', result[0].result);
+
+      this.showMessage(userMessage, "error");
+    }
+  }
+
+  async testOpenAIKey() {
+    try {
+      if (!this.settings.openaiApiKey) {
+        this.showMessage("Please enter an OpenAI API key first!", "error");
+        return;
+      }
+
+      this.showMessage("Testing OpenAI API key...", "info");
+      const result = await chrome.runtime.sendMessage({
+        action: "testOpenAIKey",
+        apiKey: this.settings.openaiApiKey,
+      });
+
+      if (result.success) {
+        this.showMessage("OpenAI API key is valid!", "success");
+        if (this.elements.openAIKeyStatus) {
+          this.elements.openAIKeyStatus.textContent = "✅ Valid";
+          this.elements.openAIKeyStatus.className =
+            "status-span status-success";
         }
-      } catch (altError) {
-        console.log('⚠️ Alternative approach also failed:', altError);
-      }
-    } finally {
-      this.showLoading(false);
-      this.elements.testExtraction.disabled = false;
-      this.elements.testExtraction.textContent = '🧪 Test Job Extraction';
-    }
-  }
-
-    // Function to be injected into the page for extraction testing
-  performExtractionTest() {
-    try {
-      console.log('🧪 Performing extraction test directly in page context...');
-      
-      // Basic extraction logic that runs in the page context
-      const pageInfo = {
-        url: window.location.href,
-        title: document.title,
-        description: '',
-        budget: '',
-        skills: []
-      };
-      
-      // Try to find job description
-      const descriptionSelectors = [
-        '[data-test="job-description"]',
-        '.job-description',
-        '.description',
-        '[class*="description"]',
-        '[class*="content"]',
-        'main',
-        'article'
-      ];
-      
-      for (const selector of descriptionSelectors) {
-        const element = document.querySelector(selector);
-        if (element) {
-          const text = element.textContent.trim();
-          if (text.length > 100 && text.length < 5000) {
-            pageInfo.description = text.substring(0, 200) + '...';
-            break;
-          }
-        }
-      }
-      
-      // Try to find budget
-      const allText = document.body.textContent;
-      const budgetMatch = allText.match(/\$[\d,]+/);
-      if (budgetMatch) {
-        pageInfo.budget = budgetMatch[0];
-      }
-      
-      // Try to find skills
-      const skillElements = document.querySelectorAll('.air3-token, [class*="skill"], [class*="tag"]');
-      if (skillElements.length > 0) {
-        pageInfo.skills = Array.from(skillElements).map(el => el.textContent.trim()).filter(text => text.length > 0).slice(0, 5);
-      }
-      
-      console.log('📋 Page extraction results:', pageInfo);
-      return pageInfo;
-      
-    } catch (error) {
-      console.error('❌ Error in page context extraction:', error);
-      return { error: error.message };
-    }
-  }
-
-  // Check extension permissions and provide guidance
-  async checkPermissions() {
-    try {
-      const permissions = await chrome.permissions.getAll();
-      console.log('🔐 Extension permissions:', permissions);
-      
-      // Check if we have the necessary permissions
-      const hasScripting = permissions.permissions.includes('scripting');
-      const hasActiveTab = permissions.permissions.includes('activeTab');
-      
-      if (!hasScripting || !hasActiveTab) {
-        console.warn('⚠️ Missing required permissions for job extraction testing');
-        this.elements.testExtraction.style.opacity = '0.5';
-        this.elements.testExtraction.title = 'Missing permissions: scripting, activeTab';
-      }
-    } catch (error) {
-      console.error('Error checking permissions:', error);
-    }
-  }
-
-  async checkNow() {
-    try {
-      this.showLoading(true);
-      
-      const response = await chrome.runtime.sendMessage({ action: 'checkNow' });
-      
-      if (response && response.success) {
-        this.showMessage('Checking for new jobs...', 'success');
-        
-        // Refresh the status after a short delay
-        setTimeout(() => {
-          this.loadSettings();
-        }, 2000);
       } else {
-        this.showMessage('Error checking for jobs', 'error');
+        this.showMessage(
+          `OpenAI API key test failed: ${result.error}`,
+          "error"
+        );
+        if (this.elements.openAIKeyStatus) {
+          this.elements.openAIKeyStatus.textContent = "❌ Invalid";
+          this.elements.openAIKeyStatus.className = "status-span status-error";
+        }
       }
     } catch (error) {
-      console.error('Error checking for jobs:', error);
-      this.showMessage('Error checking for jobs', 'error');
-    } finally {
-      this.showLoading(false);
+      console.error("❌ Error testing OpenAI key:", error);
+      this.showMessage("Error testing OpenAI key!", "error");
     }
   }
 
-  showLoading(show) {
-    this.elements.loading.style.display = show ? 'block' : 'none';
+  clearOpenAIKey() {
+    this.settings.openaiApiKey = "";
+    if (this.elements.openaiApiKey) {
+      this.elements.openaiApiKey.value = "";
+    }
+    if (this.elements.openAIKeyStatus) {
+      this.elements.openAIKeyStatus.textContent = "";
+      this.elements.openAIKeyStatus.className = "status-span";
+    }
+    this.showMessage("OpenAI API key cleared!", "info");
   }
 
-  showMessage(text, type = 'success') {
-    this.elements.message.textContent = text;
-    this.elements.message.className = type;
-    
-    // Clear message after 3 seconds
-    setTimeout(() => {
-      this.elements.message.textContent = '';
-      this.elements.message.className = '';
-    }, 3000);
+  async testGeminiKey() {
+    try {
+      if (!this.settings.geminiApiKey) {
+        this.showMessage("Please enter a Gemini API key first!", "error");
+        return;
+      }
+
+      this.showMessage("Testing Gemini API key...", "info");
+      const result = await chrome.runtime.sendMessage({
+        action: "testGeminiKey",
+        apiKey: this.settings.geminiApiKey,
+      });
+
+      if (result.success) {
+        this.showMessage("Gemini API key is valid!", "success");
+        if (this.elements.geminiKeyStatus) {
+          this.elements.geminiKeyStatus.textContent = "✅ Valid";
+          this.elements.geminiKeyStatus.className =
+            "status-span status-success";
+        }
+      } else {
+        this.showMessage(
+          `Gemini API key test failed: ${result.error}`,
+          "error"
+        );
+        if (this.elements.geminiKeyStatus) {
+          this.elements.geminiKeyStatus.textContent = "❌ Invalid";
+          this.elements.geminiKeyStatus.className = "status-span status-error";
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error testing Gemini key:", error);
+      this.showMessage("Error testing Gemini key!", "error");
+    }
   }
 
-  // Helper method to format time
-  formatTime(timestamp) {
-    if (!timestamp) return '-';
-    
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now - date;
-    
-    if (diff < 60000) { // Less than 1 minute
-      return 'Just now';
-    } else if (diff < 3600000) { // Less than 1 hour
-      const minutes = Math.floor(diff / 60000);
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    } else if (diff < 86400000) { // Less than 1 day
-      const hours = Math.floor(diff / 3600000);
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  clearGeminiKey() {
+    this.settings.geminiApiKey = "";
+    if (this.elements.geminiApiKey) {
+      this.elements.geminiApiKey.value = "";
+    }
+    if (this.elements.geminiKeyStatus) {
+      this.elements.geminiKeyStatus.textContent = "";
+      this.elements.geminiKeyStatus.className = "status-span";
+    }
+    this.showMessage("Gemini API key cleared!", "info");
+  }
+
+  showMessage(message, type = "info") {
+    if (this.elements.message) {
+      this.elements.message.textContent = message;
+      this.elements.message.className = `message-${type}`;
+
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        if (this.elements.message) {
+          this.elements.message.textContent = "";
+          this.elements.message.className = "";
+        }
+      }, 5000);
+    }
+  }
+
+  validateAIConfiguration() {
+    const hasOpenAIKey =
+      this.settings.openaiApiKey && this.settings.openaiApiKey.trim() !== "";
+    const hasGeminiKey =
+      this.settings.geminiApiKey && this.settings.geminiApiKey.trim() !== "";
+
+    if (this.settings.aiEnabled) {
+      if (!hasOpenAIKey && !hasGeminiKey) {
+        this.showMessage(
+          "⚠️ AI proposals enabled but no API keys configured!",
+          "error"
+        );
+        return false;
+      }
+
+      if (this.settings.aiProvider === "openai" && !hasOpenAIKey) {
+        this.showMessage(
+          "⚠️ OpenAI selected but no OpenAI API key configured!",
+          "error"
+        );
+        return false;
+      }
+
+      if (this.settings.aiProvider === "gemini" && !hasGeminiKey) {
+        this.showMessage(
+          "⚠️ Gemini selected but no Gemini API key configured!",
+          "error"
+        );
+        return false;
+      }
+
+      this.showMessage("✅ AI configuration is valid!", "success");
+      return true;
+    }
+
+    return false;
+  }
+
+  async validateAndSaveSettings() {
+    if (await this.validateAIConfiguration()) {
+      await this.forceSaveSettings();
+      this.showMessage("Settings validated and saved!", "success");
     } else {
-      return date.toLocaleDateString();
+      this.showMessage("Please fix AI configuration errors.", "error");
     }
   }
 }
 
-// Initialize popup when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  const popup = new PopupManager();
+// Initialize when DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 DOM loaded, initializing popup...");
+  new PopupManager();
 }); 

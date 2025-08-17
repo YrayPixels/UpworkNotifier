@@ -8,7 +8,7 @@ A Chrome extension that monitors Upwork's most recent jobs and sends notificatio
 - **Quick Job Detection**: Focuses on jobs that can be completed quickly (under 10 minutes)
 - **Real-time Notifications**: Desktop notifications for new job opportunities
 - **Email Alerts**: Optional email notifications (requires EmailJS setup)
-- **AI Proposal Drafting**: **NEW!** Generate personalized proposals using OpenAI GPT-3.5
+- **AI Proposal Drafting**: **NEW!** Generate personalized proposals using OpenAI GPT-3.5 or Google Gemini
 
 ## AI Proposal Feature
 
@@ -18,14 +18,18 @@ The extension now includes an AI-powered proposal drafting system that:
 2. **Uses Your CV**: Incorporates your skills and experience from the attached CV
 3. **Generates Personalized Proposals**: Creates compelling, job-specific proposals
 4. **Auto-insertion**: Automatically fills the cover letter textarea on Upwork
+5. **Multi-Provider Support**: Choose between OpenAI GPT-3.5 and Google Gemini
 
 ### Setup for AI Proposals
 
-1. **Get OpenAI API Key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys) to get your API key
+1. **Get API Key**: Choose your preferred AI provider:
+   - **OpenAI**: Visit [OpenAI Platform](https://platform.openai.com/api-keys) to get your API key
+   - **Gemini**: Visit [Google AI Studio](https://makersuite.google.com/app/apikey) to get your API key
 2. **Configure Extension**: 
    - Click the extension icon
    - Enable "AI Proposals" toggle
-   - Enter your OpenAI API key
+   - Select your preferred AI provider
+   - Enter your chosen provider's API key
    - Save settings
 3. **Use the Feature**:
    - Navigate to any Upwork job posting
@@ -62,7 +66,9 @@ The extension reads your CV from the `cv.txt` file. Make sure this file contains
 
 ### AI Proposal Settings
 - **Enable AI Proposals**: Turn on AI proposal drafting
-- **OpenAI API Key**: Your OpenAI API key for proposal generation
+- **AI Provider**: Choose between OpenAI and Google Gemini
+- **OpenAI API Key**: Your OpenAI API key for proposal generation (starts with "sk-")
+- **Gemini API Key**: Your Google Gemini API key for proposal generation (starts with "AIza")
 
 ## Email Setup (Optional)
 
@@ -106,7 +112,7 @@ UpworkNotifier/
 ### AI Proposal Generation
 - Analyzes the current job posting for requirements and details
 - Reads your CV to understand your skills and experience
-- Sends a structured prompt to OpenAI GPT-3.5
+- Sends a structured prompt to your chosen AI provider (OpenAI GPT-3.5 or Google Gemini)
 - Generates a personalized, professional proposal
 - Automatically inserts the proposal into Upwork's cover letter field
 
@@ -118,18 +124,22 @@ UpworkNotifier/
 ## Troubleshooting
 
 ### AI Proposals Not Working
-- Check that OpenAI API key is entered correctly
+- Check that the selected AI provider has a valid API key entered
 - Ensure "AI Proposals" is enabled in settings
-- Verify you have sufficient OpenAI API credits
+- Verify you have sufficient API credits for your chosen provider
 - Check browser console for error messages
 
 ### API Key Issues
-- **Invalid Format**: API key must start with "sk-" (e.g., sk-proj-...)
-- **Test Your Key**: Use the "Test API Key" button in settings to verify connectivity
-- **Clear and Re-enter**: Use the "Clear" button to remove the old key and enter a new one
-- **Check OpenAI Status**: Visit [OpenAI Status](https://status.openai.com/) for service issues
-- **API Credits**: Ensure you have sufficient credits in your OpenAI account
-- **Rate Limits**: Check if you've exceeded OpenAI's rate limits
+- **OpenAI API Key**: Must start with "sk-" (e.g., sk-proj-...)
+- **Gemini API Key**: Must start with "AIza" (e.g., AIzaSy...)
+- **Test Your Keys**: Use the "Test" buttons in settings to verify connectivity
+- **Clear and Re-enter**: Use the "Clear" buttons to remove old keys and enter new ones
+- **Provider Selection**: Ensure you've selected the correct AI provider in settings
+- **Check Service Status**: 
+  - [OpenAI Status](https://status.openai.com/) for OpenAI issues
+  - [Google Cloud Status](https://status.cloud.google.com/) for Gemini issues
+- **API Credits**: Ensure you have sufficient credits in your chosen provider account
+- **Rate Limits**: Check if you've exceeded your chosen provider's rate limits
 
 ### No Jobs Found
 - Verify the extension is enabled
@@ -150,21 +160,38 @@ UpworkNotifier/
 - **Job Data**: Stored locally in Chrome storage
 - **No Tracking**: Extension doesn't collect personal data
 
+### AI Provider Support 🚀
+
+The extension now supports both **OpenAI** and **Google Gemini** for AI proposal generation:
+
+#### OpenAI (GPT-3.5)
+- **Model**: GPT-3.5 Turbo
+- **Cost**: Pay-per-use pricing
+- **Quality**: High-quality, context-aware responses
+- **Best for**: Professional, detailed proposals
+
+#### Google Gemini
+- **Model**: Gemini Pro
+- **Cost**: Generous free tier, then pay-per-use
+- **Quality**: Fast, efficient responses
+- **Best for**: Quick, cost-effective proposals
+
 ### API Key Security 🔒
 
-**Your OpenAI API key is completely secure:**
+**Your API keys are completely secure:**
 
 - **Local Storage Only**: API keys are stored locally in your browser using Chrome's secure storage
-- **Never Shared**: Your API key is never sent to any external servers except OpenAI's official API
+- **Never Shared**: Your API keys are never sent to any external servers except the respective AI providers' official APIs
 - **No Logging**: API keys are never logged or displayed in console logs (only masked versions are shown)
 - **Automatic Validation**: The extension validates your API key format and tests connectivity before use
-- **Easy Management**: Test, clear, and update your API key directly from the extension settings
+- **Easy Management**: Test, clear, and update your API keys directly from the extension settings
 
 **Security Features:**
-- API key format validation (must start with "sk-")
-- Real-time API connectivity testing
+- OpenAI API key format validation (must start with "sk-")
+- Gemini API key format validation (must start with "AIza")
+- Real-time API connectivity testing for both providers
 - Secure storage using Chrome's built-in encryption
-- Automatic disabling of AI features if API key is invalid
+- Automatic disabling of AI features if no valid API keys are configured
 - No persistent storage of API keys in external databases
 
 ## Contributing

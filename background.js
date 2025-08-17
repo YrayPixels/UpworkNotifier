@@ -15,7 +15,9 @@ class UpworkJobNotifier {
     };
     this.openAISettings = {
       apiKey: "",
+      geminiApiKey: "",
       enabled: false,
+      provider: "openai"
     };
 
     this.init();
@@ -24,6 +26,16 @@ class UpworkJobNotifier {
   async init() {
     // Load saved settings
     await this.loadSettings();
+
+    // Log current settings state
+    console.log("🚀 Background script initialized with settings:", {
+      isEnabled: this.isEnabled,
+      emailEnabled: this.emailSettings.enabled,
+      aiEnabled: this.openAISettings.enabled,
+      aiProvider: this.openAISettings.provider,
+      hasOpenAIKey: !!(this.openAISettings.apiKey && this.openAISettings.apiKey.trim()),
+      hasGeminiKey: !!(this.openAISettings.geminiApiKey && this.openAISettings.geminiApiKey.trim())
+    });
 
     // Validate API key configuration on startup
     this.validateApiKeyConfiguration();
@@ -51,40 +63,112 @@ class UpworkJobNotifier {
   async loadSettings() {
     try {
       const result = await chrome.storage.sync.get([
-        "isEnabled",
+        "notificationsEnabled",
+        "emailEnabled",
+        "aiEnabled",
         "checkInterval",
-        "emailSettings",
+        "emailAddress",
+        "aiProvider",
+        "openaiApiKey",
+        "geminiApiKey",
         "lastCheckedJobs",
         "trackedJobsData",
+        // Legacy support
+        "isEnabled",
+        "emailSettings",
         "openAISettings",
       ]);
 
-      this.isEnabled = result.isEnabled !== undefined ? result.isEnabled : true;
+      // New settings structure
+      this.isEnabled =
+        result.notificationsEnabled !== undefined
+          ? result.notificationsEnabled
+          : result.isEnabled !== undefined
+          ? result.isEnabled
+          : true;
+
       this.checkInterval = result.checkInterval || this.checkInterval;
-      this.emailSettings = result.emailSettings || this.emailSettings;
+
+      // Email settings
+      this.emailSettings = {
+        enabled:
+          result.emailEnabled !== undefined
+            ? result.emailEnabled
+            : result.emailSettings?.enabled || false,
+        email: result.emailAddress || result.emailSettings?.email || "",
+        smtpServer: result.emailSettings?.smtpServer || "",
+        smtpPort: result.emailSettings?.smtpPort || 587,
+        username: result.emailSettings?.username || "",
+        password: result.emailSettings?.password || "",
+      };
+
+      // AI settings
+      this.openAISettings = {
+        enabled:
+          result.aiEnabled !== undefined
+            ? result.aiEnabled
+            : result.openAISettings?.enabled || false,
+        apiKey: result.openaiApiKey || result.openAISettings?.apiKey || "",
+        geminiApiKey:
+          result.geminiApiKey || result.openAISettings?.geminiApiKey || "",
+        provider:
+          result.aiProvider || result.openAISettings?.provider || "openai",
+      };
+
       this.lastCheckedJobs = new Set(result.lastCheckedJobs || []);
-      this.openAISettings = result.openAISettings || this.openAISettings;
 
       // Load tracked jobs data
       if (result.trackedJobsData) {
         this.trackedJobsData = new Map(Object.entries(result.trackedJobsData));
       }
+
+      console.log("📥 Settings loaded:", {
+        isEnabled: this.isEnabled,
+        checkInterval: this.checkInterval,
+        emailSettings: this.emailSettings,
+        openAISettings: this.openAISettings,
+      });
     } catch (error) {
       console.error("Error loading settings:", error);
     }
   }
 
   validateApiKeyConfiguration() {
-    // Check if AI proposals are enabled but API key is missing
-    if (this.openAISettings.enabled && (!this.openAISettings.apiKey || this.openAISettings.apiKey.trim() === '')) {
-      console.warn('⚠️ AI proposals are enabled but no API key is configured. Disabling AI proposals.');
-      this.openAISettings.enabled = false;
-      this.saveSettings();
+    // Check if AI proposals are enabled but no API keys are configured
+    if (this.openAISettings.enabled) {
+      const hasOpenAIKey =
+        this.openAISettings.apiKey && this.openAISettings.apiKey.trim() !== "";
+      const hasGeminiKey =
+        this.openAISettings.geminiApiKey &&
+        this.openAISettings.geminiApiKey.trim() !== "";
+
+      if (!hasOpenAIKey && !hasGeminiKey) {
+        console.warn(
+          "⚠️ AI proposals are enabled but no API keys are configured. Disabling AI proposals."
+        );
+        this.openAISettings.enabled = false;
+        this.saveSettings();
+      }
     }
-    
-    // Check if API key format is valid
-    if (this.openAISettings.apiKey && !this.openAISettings.apiKey.startsWith('sk-')) {
-      console.warn('⚠️ Invalid API key format detected. API key should start with "sk-".');
+
+    // Check if OpenAI API key format is valid
+    if (
+      this.openAISettings.apiKey &&
+      !this.openAISettings.apiKey.startsWith("sk-")
+    ) {
+      console.warn(
+        '⚠️ Invalid OpenAI API key format detected. API key should start with "sk-".'
+      );
+    }
+
+    // Check if Gemini API key format is valid
+    if (
+      this.openAISettings.geminiApiKey &&
+      !this.openAISettings.geminiApiKey.startsWith("AIza")
+    ) {
+      console.warn(
+        '⚠️ Invalid Gemini API key format detected. API key should start with "AIza".'
+      );
     }
   }
 
@@ -111,30 +195,59 @@ class UpworkJobNotifier {
         };
       });
 
-      // Create a safe copy of settings for logging (without API key)
-      const safeSettings = {
-        ...this.openAISettings,
-        apiKey: this.openAISettings.apiKey ? 
-          (this.openAISettings.apiKey.substring(0, 7) + '...' + this.openAISettings.apiKey.substring(this.openAISettings.apiKey.length - 4)) : 
-          'not set'
+      // Save new settings structure
+      const newSettings = {
+        notificationsEnabled: this.isEnabled,
+        emailEnabled: this.emailSettings.enabled,
+        aiEnabled: this.openAISettings.enabled,
+        checkInterval: this.checkInterval,
+        emailAddress: this.emailSettings.email,
+        aiProvider: this.openAISettings.provider,
+        openaiApiKey: this.openAISettings.apiKey,
+        geminiApiKey: this.openAISettings.geminiApiKey,
+        lastCheckedJobs: Array.from(this.lastCheckedJobs),
+        trackedJobsData: limitedTrackedJobs,
       };
 
-      console.log('💾 Saving settings:', {
-        ...this,
-        openAISettings: safeSettings,
-        trackedJobsData: `[${Object.keys(limitedTrackedJobs).length} jobs]`
-      });
-
-      await chrome.storage.sync.set({
+      // Also save legacy structure for compatibility
+      const legacySettings = {
         isEnabled: this.isEnabled,
         checkInterval: this.checkInterval,
         emailSettings: this.emailSettings,
         openAISettings: this.openAISettings,
-        lastCheckedJobs: Array.from(this.lastCheckedJobs).slice(0, 100), // Limit to 100
+        lastCheckedJobs: Array.from(this.lastCheckedJobs),
         trackedJobsData: limitedTrackedJobs,
-      });
+      };
+
+      // Save both structures
+      await chrome.storage.sync.set(newSettings);
+      await chrome.storage.sync.set(legacySettings);
+
+      // Create a safe copy of settings for logging (without API keys)
+      const safeSettings = {
+        notificationsEnabled: this.isEnabled,
+        emailEnabled: this.emailSettings.enabled,
+        aiEnabled: this.openAISettings.enabled,
+        provider: this.openAISettings.provider,
+        openaiApiKey: this.openAISettings.apiKey
+          ? this.openAISettings.apiKey.substring(0, 7) +
+            "..." +
+            this.openAISettings.apiKey.substring(
+              this.openAISettings.apiKey.length - 4
+            )
+          : "Not set",
+        geminiApiKey: this.openAISettings.geminiApiKey
+          ? this.openAISettings.geminiApiKey.substring(0, 7) +
+            "..." +
+            this.openAISettings.geminiApiKey.substring(
+              this.openAISettings.geminiApiKey.length - 4
+            )
+          : "Not set",
+      };
+
+      console.log("💾 Settings saved successfully:", safeSettings);
     } catch (error) {
-      console.error("Error saving settings:", error);
+      console.error("❌ Error saving settings:", error);
     }
   }
 
@@ -493,14 +606,55 @@ class UpworkJobNotifier {
   }
 
   async draftAIProposal(job, cvData) {
+    console.log("🧠 draftAIProposal called with settings:", {
+      enabled: this.openAISettings.enabled,
+      provider: this.openAISettings.provider,
+      hasOpenAIKey: !!(
+        this.openAISettings.apiKey && this.openAISettings.apiKey.trim()
+      ),
+      hasGeminiKey: !!(
+        this.openAISettings.geminiApiKey &&
+        this.openAISettings.geminiApiKey.trim()
+      ),
+    });
+
     if (!this.openAISettings.enabled) {
-      throw new Error("AI proposal drafting is not enabled. Please enable it in the extension settings.");
-    }
-    
-    if (!this.openAISettings.apiKey || this.openAISettings.apiKey.trim() === '') {
-      throw new Error("OpenAI API key is not configured. Please add your API key in the extension settings.");
+      throw new Error(
+        "AI proposal drafting is not enabled. Please enable it in the extension settings."
+      );
     }
 
+    const provider = this.openAISettings.provider || "openai";
+    console.log("🔄 Using AI provider:", provider);
+
+    if (provider === "openai") {
+      if (
+        !this.openAISettings.apiKey ||
+        this.openAISettings.apiKey.trim() === ""
+      ) {
+        throw new Error(
+          "OpenAI API key is not configured. Please add your OpenAI API key in the extension settings."
+        );
+      }
+      return await this.draftOpenAIProposal(job, cvData);
+    } else if (provider === "gemini") {
+      if (
+        !this.openAISettings.geminiApiKey ||
+        this.openAISettings.geminiApiKey.trim() === ""
+      ) {
+        throw new Error(
+          "Gemini API key is not configured. Please add your Gemini API key in the extension settings."
+        );
+      }
+      return await this.draftGeminiProposal(job, cvData);
+    } else {
+      throw new Error(
+        "Invalid AI provider selected. Please choose either OpenAI or Gemini."
+      );
+    }
+  }
+
+  async draftOpenAIProposal(job, cvData) {
     try {
       const prompt = this.createProposalPrompt(job, cvData);
       
@@ -544,7 +698,59 @@ class UpworkJobNotifier {
       
       return proposal;
     } catch (error) {
-      console.error("Error drafting AI proposal:", error);
+      console.error("Error drafting OpenAI proposal:", error);
+      throw error;
+    }
+  }
+
+  async draftGeminiProposal(job, cvData) {
+    try {
+      const prompt = this.createProposalPrompt(job, cvData);
+      
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${this.openAISettings.geminiApiKey}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `You are a freelance proposal writer. Write proposals in FIRST PERSON ('I', 'my', 'I will') as if the candidate is speaking directly to the client. Focus on solving their specific problems using the candidate's relevant skills. Keep proposals concise, professional, and solution-focused. NO email formatting, NO subject lines, NO contact details.
+
+${prompt}`
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 800,
+            topP: 0.8,
+            topK: 40
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const proposalText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      
+      if (!proposalText) {
+        throw new Error("No proposal generated from Gemini");
+      }
+
+      // Parse the proposal into structured format
+      const proposal = this.parseProposalResponse(proposalText, job);
+      
+      return proposal;
+    } catch (error) {
+      console.error("Error drafting Gemini proposal:", error);
       throw error;
     }
   }
@@ -675,12 +881,12 @@ Write a proposal in first person that directly addresses their job requirements 
     }
   }
 
-  async handleTestApiKey(apiKey, sendResponse) {
+  async handleTestOpenAIKey(apiKey, sendResponse) {
     try {
       if (!apiKey || !apiKey.startsWith('sk-')) {
         sendResponse({
           success: false,
-          error: 'Invalid API key format'
+          error: 'Invalid OpenAI API key format. Should start with "sk-"'
         });
         return;
       }
@@ -697,7 +903,7 @@ Write a proposal in first person that directly addresses their job requirements 
       if (response.ok) {
         sendResponse({
           success: true,
-          message: 'API key is valid'
+          message: 'OpenAI API key is valid'
         });
       } else {
         const errorData = await response.json();
@@ -707,7 +913,58 @@ Write a proposal in first person that directly addresses their job requirements 
         });
       }
     } catch (error) {
-      console.error('Error testing API key:', error);
+      console.error('Error testing OpenAI API key:', error);
+      sendResponse({
+        success: false,
+        error: error.message || 'Network error occurred'
+      });
+    }
+  }
+
+  async handleTestGeminiKey(apiKey, sendResponse) {
+    console.log('🧪 Background: Testing Gemini API key...');
+    try {
+      if (!apiKey || !apiKey.startsWith('AIza')) {
+        console.log('❌ Background: Invalid Gemini API key format');
+        sendResponse({
+          success: false,
+          error: 'Invalid Gemini API key format. Should start with "AIza"'
+        });
+        return;
+      }
+
+      console.log('✅ Background: Gemini API key format valid, testing API endpoint...');
+
+      // Test the API key with a simple request
+      console.log('🌐 Background: Making request to Gemini API...');
+      const apiUrl = `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`;
+      console.log('🔗 Background: API URL:', apiUrl.substring(0, 50) + '...');
+      
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log('📡 Background: Gemini API response status:', response.status, response.statusText);
+
+      if (response.ok) {
+        console.log('✅ Background: Gemini API key is valid');
+        sendResponse({
+          success: true,
+          message: 'Gemini API key is valid'
+        });
+      } else {
+        const errorData = await response.json();
+        console.log('❌ Background: Gemini API error:', errorData);
+        sendResponse({
+          success: false,
+          error: errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`
+        });
+      }
+    } catch (error) {
+      console.error('Error testing Gemini API key:', error);
       sendResponse({
         success: false,
         error: error.message || 'Network error occurred'
@@ -738,11 +995,16 @@ Write a proposal in first person that directly addresses their job requirements 
     switch (request.action) {
       case "getStatus":
         sendResponse({
-          isEnabled: this.isEnabled,
-          checkInterval: this.checkInterval,
-          emailSettings: this.emailSettings,
-          openAISettings: this.openAISettings,
-          lastCheckedCount: this.lastCheckedJobs.size,
+          success: true,
+          data: {
+            isEnabled: this.isEnabled,
+            checkInterval: this.checkInterval,
+            emailSettings: this.emailSettings,
+            openAISettings: this.openAISettings,
+            lastCheckedCount: this.lastCheckedJobs.size,
+            lastCheck: this.lastCheckedJobs.size > 0 ? "Recently" : "Never",
+            jobsTracked: this.lastCheckedJobs.size,
+          },
         });
         break;
 
@@ -753,22 +1015,85 @@ Write a proposal in first person that directly addresses their job requirements 
         break;
 
       case "updateSettings":
-        this.checkInterval = request.checkInterval || this.checkInterval;
-        this.emailSettings = request.emailSettings || this.emailSettings;
-        
-        // Validate OpenAI API key format before saving
-        if (request.openAISettings) {
-          if (request.openAISettings.enabled && 
-              (!request.openAISettings.apiKey || !request.openAISettings.apiKey.trim().startsWith('sk-'))) {
-            sendResponse({ 
-              success: false, 
-              error: 'Invalid OpenAI API key format. API key must start with "sk-" and be properly configured.' 
-            });
-            return;
+        // Handle new settings structure
+        if (request.settings) {
+          this.isEnabled =
+            request.settings.notificationsEnabled !== undefined
+              ? request.settings.notificationsEnabled
+              : this.isEnabled;
+
+          this.checkInterval =
+            request.settings.checkInterval || this.checkInterval;
+
+          // Update email settings
+          this.emailSettings.enabled =
+            request.settings.emailEnabled !== undefined
+              ? request.settings.emailEnabled
+              : this.emailSettings.enabled;
+          this.emailSettings.email =
+            request.settings.emailAddress || this.emailSettings.email;
+
+          // Update AI settings
+          const oldAIEnabled = this.openAISettings.enabled;
+          const oldAIProvider = this.openAISettings.provider;
+
+          this.openAISettings.enabled =
+            request.settings.aiEnabled !== undefined
+              ? request.settings.aiEnabled
+              : this.openAISettings.enabled;
+          this.openAISettings.apiKey =
+            request.settings.openaiApiKey || this.openAISettings.apiKey;
+          this.openAISettings.geminiApiKey =
+            request.settings.geminiApiKey || this.openAISettings.geminiApiKey;
+          this.openAISettings.provider =
+            request.settings.aiProvider || this.openAISettings.provider;
+
+          console.log("🔄 AI Settings updated:", {
+            enabled: `${oldAIEnabled} → ${this.openAISettings.enabled}`,
+            provider: `${oldAIProvider} → ${this.openAISettings.provider}`,
+            hasOpenAIKey: !!(
+              this.openAISettings.apiKey && this.openAISettings.apiKey.trim()
+            ),
+            hasGeminiKey: !!(
+              this.openAISettings.geminiApiKey &&
+              this.openAISettings.geminiApiKey.trim()
+            ),
+          });
+
+          console.log("🔄 Settings updated:", {
+            notificationsEnabled: this.isEnabled,
+            emailEnabled: this.emailSettings.enabled,
+            aiEnabled: this.openAISettings.enabled,
+            aiProvider: this.openAISettings.provider,
+          });
+        } else {
+          // Legacy support
+          this.checkInterval = request.checkInterval || this.checkInterval;
+          this.emailSettings = request.emailSettings || this.emailSettings;
+
+          // Validate OpenAI API key format before saving
+          if (request.openAISettings) {
+            if (request.openAISettings.enabled) {
+              const hasOpenAIKey =
+                request.openAISettings.apiKey &&
+                request.openAISettings.apiKey.trim().startsWith("sk-");
+              const hasGeminiKey =
+                request.openAISettings.geminiApiKey &&
+                request.openAISettings.geminiApiKey.trim().startsWith("AIza");
+
+              if (!hasOpenAIKey && !hasGeminiKey) {
+                sendResponse({
+                  success: false,
+                  error:
+                    "AI proposals are enabled but no valid API keys are configured. Please add either an OpenAI or Gemini API key.",
+                });
+                return;
+              }
+            }
+            this.openAISettings = request.openAISettings;
           }
-          this.openAISettings = request.openAISettings;
         }
-        
+
         await this.saveSettings();
 
         // Update alarm with new interval
@@ -823,8 +1148,13 @@ Write a proposal in first person that directly addresses their job requirements 
         sendResponse({ success: true });
         break;
 
-      case "testApiKey":
-        this.handleTestApiKey(request.apiKey, sendResponse);
+      case "testOpenAIKey":
+        this.handleTestOpenAIKey(request.apiKey, sendResponse);
+        return true; // Keep message channel open for async response
+        break;
+
+      case "testGeminiKey":
+        this.handleTestGeminiKey(request.apiKey, sendResponse);
         return true; // Keep message channel open for async response
         break;
 

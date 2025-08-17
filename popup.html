@@ -12,44 +12,189 @@
         }
 
         body {
-            width: 400px;
-            min-height: 500px;
+            width: 380px;
+            min-height: 600px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
+            background: #f5f5f5;
         }
 
         .container {
-            padding: 20px;
             background: white;
-            border-radius: 12px;
-            margin: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
 
         .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
             text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
         }
 
         .header h1 {
-            color: #667eea;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 600;
             margin-bottom: 5px;
         }
 
         .header p {
-            color: #666;
             font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: #667eea;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .notification-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        .notification-preview a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .notification-preview a:hover {
+            text-decoration: underline;
         }
 
         .status-section {
             background: #f8f9fa;
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 6px;
             margin-bottom: 20px;
         }
 
@@ -57,7 +202,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
 
         .status-item:last-child {
@@ -74,269 +220,221 @@
             color: #667eea;
         }
 
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 24px;
-            background: #ccc;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .toggle-switch.active {
-            background: #667eea;
-        }
-
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
-        }
-
-        .toggle-switch.active::after {
-            transform: translateX(26px);
-        }
-
-        .section {
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .form-group {
+        .api-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
             margin-bottom: 15px;
         }
 
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #555;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e1e5e9;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .form-select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e1e5e9;
-            border-radius: 6px;
-            font-size: 14px;
-            background: white;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
+        .api-section-title {
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5a6fd8;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: #f8f9fa;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
-        .btn-secondary:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .notification-preview {
-            background: #e8f4fd;
-            border: 1px solid #b3d9ff;
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 12px;
-            color: #0066cc;
-        }
-
-        .error {
-            color: #dc3545;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .success {
-            color: #28a745;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .error {
-            color: #dc3545;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .info {
-            color: #17a2b8;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            color: #667eea;
+            color: #333;
+            margin-bottom: 10px;
             font-size: 14px;
         }
 
-        .spinner {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #667eea;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 8px;
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .status-span {
+            font-size: 12px;
+            margin-left: 8px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        #message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .message-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
             <h1>Upwork Job Notifier</h1>
-            <p>Stay updated with new job opportunities</p>
+            <p>Monitor and get notified about new quick jobs</p>
         </div>
 
-        <div class="status-section">
-            <div class="status-item">
-                <span class="status-label">Status:</span>
-                <span class="status-value" id="status">Loading...</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Last Check:</span>
-                <span class="status-value" id="lastCheck">-</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Jobs Tracked:</span>
-                <span class="status-value" id="jobsTracked">-</span>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Notifications</div>
-            <div class="form-group">
-                <label class="form-label">Enable Notifications</label>
-                <div class="toggle-switch" id="notificationToggle"></div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Check Interval</label>
-                <select class="form-select" id="checkInterval">
-                    <option value="0.5">Every 30 seconds</option>
-                    <option value="1">Every 1 minute</option>
-                    <option value="5" selected>Every 5 minutes</option>
-                    <option value="10">Every 10 minutes</option>
-                    <option value="15">Every 15 minutes</option>
-                    <option value="30">Every 30 minutes</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">Email Notifications</div>
-            <div class="form-group">
-                <label class="form-label">Enable Email Alerts</label>
-                <div class="toggle-switch" id="emailToggle"></div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" id="emailAddress" placeholder="your@email.com">
-            </div>
-            <div class="notification-preview">
-                <strong>Note:</strong> Email notifications require EmailJS setup. See README for configuration.
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">AI Proposal Drafting</div>
-            <div class="form-group">
-                <label class="form-label">Enable AI Proposals</label>
-                <div class="toggle-switch" id="aiToggle"></div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">OpenAI API Key</label>
-                <input type="password" class="form-input" id="openaiApiKey" placeholder="sk-...">
-                <div class="notification-preview">
-                    <strong>🔒 Security:</strong> Your API key is stored locally in your browser and never shared with external servers. Get your key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>.
+        <div class="content">
+            <!-- Status Section -->
+            <div class="status-section">
+                <div class="status-item">
+                    <span class="status-label">Status:</span>
+                    <span class="status-value" id="status">Loading...</span>
                 </div>
-                <div class="form-group" style="margin-top: 10px;">
-                    <button type="button" class="btn btn-secondary" id="testApiKey" style="width: auto; padding: 8px 16px; font-size: 12px;">
-                        🧪 Test API Key
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="clearApiKey" style="width: auto; padding: 8px 16px; font-size: 12px; margin-left: 8px;">
-                        🗑️ Clear
-                    </button>
-                    <span id="apiKeyStatus" style="margin-left: 10px; font-size: 12px;"></span>
+                <div class="status-item">
+                    <span class="status-label">Last Check:</span>
+                    <span class="status-value" id="lastCheck">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Jobs Tracked:</span>
+                    <span class="status-value" id="jobsTracked">-</span>
                 </div>
             </div>
-        </div>
 
-        <div class="section">
-            <button class="btn btn-primary" id="checkNow">Check for New Jobs Now</button>
-            <button class="btn btn-secondary" id="saveSettings" style="margin-top: 10px;">Save Settings</button>
-            <button class="btn btn-secondary" id="testExtraction" style="margin-top: 10px; background: #17a2b8; color: white;">
-                🧪 Test Job Extraction
-            </button>
-            <div class="notification-preview" style="margin-top: 10px;">
-                <strong>Note:</strong> This button tests job data extraction on the current Upwork page. Make sure you're on a job
-                posting page and the page has fully loaded.
+            <!-- Job Monitoring Section -->
+            <div class="section">
+                <div class="section-title">Job Monitoring</div>
+                <div class="form-group">
+                    <label class="form-label">Enable Notifications</label>
+                    <div class="toggle-switch" id="notificationToggle"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Check Interval</label>
+                    <select class="form-select" id="checkInterval">
+                        <option value="0.5">Every 30 seconds</option>
+                        <option value="1">Every 1 minute</option>
+                        <option value="5" selected>Every 5 minutes</option>
+                        <option value="10">Every 10 minutes</option>
+                        <option value="15">Every 15 minutes</option>
+                        <option value="30">Every 30 minutes</option>
+                    </select>
+                </div>
+                </div>
+
+            <!-- Email Notifications Section -->
+            <div class="section">
+                <div class="section-title">Email Notifications</div>
+                <div class="form-group">
+                    <label class="form-label">Enable Email Alerts</label>
+                    <div class="toggle-switch" id="emailToggle"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" id="emailAddress" placeholder="your@email.com">
+                    <div class="notification-preview">
+                        <strong>Note:</strong> Email notifications require EmailJS setup. See README for configuration.
+                    </div>
+                    </div>
             </div>
-        </div>
 
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            Checking for new jobs...
-        </div>
+            <!-- AI Provider Selection -->
+            <div class="section">
+                <div class="section-title">AI Provider</div>
+                <div class="form-group">
+                    <label class="form-label">Select AI Service</label>
+                    <select class="form-select" id="aiProvider">
+                        <option value="openai">OpenAI (GPT-3.5)</option>
+                        <option value="gemini">Google Gemini</option>
+                    </select>
+                    </div>
+            </div>
+            
+            <!-- OpenAI Section -->
+            <div class="api-section" id="openaiSection">
+                <div class="api-section-title">OpenAI Configuration</div>
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="form-input" id="openaiApiKey" placeholder="sk-...">
+                    <div class="notification-preview">
+                        <strong>🔒 Security:</strong> Your API key is stored locally and never shared. Get your key from <a
+                            href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>.
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-secondary btn-small" id="testOpenAIKey">🧪 Test Key</button>
+                            <button type="button" class="btn btn-secondary btn-small" id="clearOpenAIKey">🗑️ Clear</button>
+                            <span id="openAIKeyStatus" class="status-span"></span>
+                        </div>
+                        </div>
+                        </div>
+                        
+                        <!-- Gemini Section -->
+                        <div class="api-section" id="geminiSection" style="display: none;">
+                            <div class="api-section-title">Google Gemini Configuration</div>
+                            <div class="form-group">
+                                <label class="form-label">API Key</label>
+                                <input type="password" class="form-input" id="geminiApiKey" placeholder="AIza...">
+                                <div class="notification-preview">
+                                    <strong>🔒 Security:</strong> Your API key is stored locally and never shared. Get your key from <a
+                                        href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>.
+                                </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary btn-small" id="testGeminiKey">🧪 Test Key</button>
+                        <button type="button" class="btn btn-secondary btn-small" id="clearGeminiKey">🗑️ Clear</button>
+                        <span id="geminiKeyStatus" class="status-span"></span>
+                    </div>
+                    </div>
+                    </div>
 
-        <div id="message"></div>
+            <!-- AI Toggle -->
+            <div class="section">
+                <div class="section-title">AI Proposals</div>
+                <div class="form-group">
+                    <label class="form-label">Enable AI Proposal Generation</label>
+                    <div class="toggle-switch" id="aiToggle"></div>
+                    <div class="notification-preview">
+                        <strong>Note:</strong> AI proposals will be generated using the selected provider when enabled.
+                    </div>
+                    <div class="btn-group" style="margin-top: 10px;">
+                        <button type="button" class="btn btn-secondary btn-small" id="validateAI">🔍 Validate AI Config</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="section">
+                <div class="section-title">Actions</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="checkNow">Check for New Jobs</button>
+                    <button class="btn btn-secondary" id="saveSettings">Save Settings</button>
+                    <button class="btn btn-secondary" id="testExtraction">🧪 Test Extraction</button>
+                    <button class="btn btn-secondary" id="checkContentScript">🔍 Check Script Status</button>
+                    <button class="btn btn-secondary" id="validateAndSave">✅ Validate & Save</button>
+                </div>
+                <div class="notification-preview" style="margin-top: 10px;">
+                    <strong>Test Extraction:</strong> Tests job data extraction on the current Upwork page. Make sure you're on a job posting page.
+                </div>
+            </div>
+
+            <!-- Message Display -->
+            <div id="message"></div>
+        </div>
     </div>
 
     <script src="popup.js"></script>
