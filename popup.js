@@ -10,6 +10,7 @@ class PopupManager {
     this.cacheElements();
     this.bindEvents();
     this.loadSettings();
+    this.checkPermissions();
   }
 
   cacheElements() {
@@ -28,6 +29,7 @@ class PopupManager {
       apiKeyStatus: document.getElementById('apiKeyStatus'),
       checkNow: document.getElementById('checkNow'),
       saveSettings: document.getElementById('saveSettings'),
+      testExtraction: document.getElementById('testExtraction'),
       loading: document.getElementById('loading'),
       message: document.getElementById('message')
     };
@@ -57,6 +59,10 @@ class PopupManager {
 
     this.elements.saveSettings.addEventListener('click', () => {
       this.saveSettings();
+    });
+
+    this.elements.testExtraction.addEventListener("click", () => {
+      this.testExtraction();
     });
 
     // Form inputs
@@ -273,6 +279,196 @@ class PopupManager {
     if (this.settings.openAISettings?.enabled) {
       this.elements.aiToggle.classList.remove('active');
       this.updateSettings();
+    }
+  }
+
+  async testExtraction() {
+    try {
+      this.showLoading(true);
+      this.elements.testExtraction.disabled = true;
+      this.elements.testExtraction.textContent = '🧪 Testing...';
+      
+      // Get the current active tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      console.log('🔍 Current tab:', {
+        id: tab.id,
+        url: tab.url,
+        title: tab.title,
+        status: tab.status
+      });
+      
+      if (!tab.url.includes('upwork.com')) {
+        this.showMessage('Please navigate to an Upwork job page first', 'error');
+        return;
+      }
+      
+      // Check if we can access the tab
+      if (tab.status !== 'complete') {
+        this.showMessage('Page is still loading. Please wait for the page to fully load and try again.', 'error');
+        return;
+      }
+      
+      // Check if content script is loaded by trying to inject it first
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+        console.log('✅ Content script injected successfully');
+      } catch (injectError) {
+        console.log('⚠️ Content script injection failed, trying direct message...');
+      }
+      
+      // Wait a moment for the script to initialize
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Try to send message to content script
+      let response;
+      try {
+        response = await chrome.tabs.sendMessage(tab.id, { action: 'testExtraction' });
+      } catch (messageError) {
+        if (messageError.message.includes('Receiving end does not exist')) {
+          // Content script not loaded, try to inject and retry
+          console.log('🔄 Content script not loaded, injecting and retrying...');
+          
+          try {
+            await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              files: ['content.js']
+            });
+            
+            // Wait for script to initialize
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Try again
+            response = await chrome.tabs.sendMessage(tab.id, { action: 'testExtraction' });
+          } catch (retryError) {
+            throw new Error('Failed to load content script after retry: ' + retryError.message);
+          }
+        } else {
+          throw messageError;
+        }
+      }
+      
+      if (response && response.success) {
+        this.showMessage('Job extraction test completed! Check console for details.', 'success');
+      } else {
+        this.showMessage('Job extraction test failed: ' + (response?.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      console.error('Error testing extraction:', error);
+      
+      let userMessage = 'Error testing extraction: ' + error.message;
+      
+      // Provide more helpful error messages
+      if (error.message.includes('Receiving end does not exist')) {
+        userMessage = 'Content script not loaded. Please refresh the page and try again.';
+      } else if (error.message.includes('Cannot access')) {
+        userMessage = 'Cannot access this page. Please ensure you are on an Upwork job page.';
+      } else if (error.message.includes('Failed to load content script')) {
+        userMessage = 'Failed to load extension script. Please refresh the page and try again.';
+      }
+      
+      this.showMessage(userMessage, 'error');
+      
+      // Try alternative approach - inject script directly and execute
+      console.log('🔄 Trying alternative approach with direct script injection...');
+      try {
+        const result = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: this.performExtractionTest
+        });
+        
+        if (result && result[0] && result[0].result) {
+          this.showMessage('Alternative extraction test completed! Check console for details.', 'success');
+          console.log('✅ Alternative extraction result:', result[0].result);
+        }
+      } catch (altError) {
+        console.log('⚠️ Alternative approach also failed:', altError);
+      }
+    } finally {
+      this.showLoading(false);
+      this.elements.testExtraction.disabled = false;
+      this.elements.testExtraction.textContent = '🧪 Test Job Extraction';
+    }
+  }
+
+    // Function to be injected into the page for extraction testing
+  performExtractionTest() {
+    try {
+      console.log('🧪 Performing extraction test directly in page context...');
+      
+      // Basic extraction logic that runs in the page context
+      const pageInfo = {
+        url: window.location.href,
+        title: document.title,
+        description: '',
+        budget: '',
+        skills: []
+      };
+      
+      // Try to find job description
+      const descriptionSelectors = [
+        '[data-test="job-description"]',
+        '.job-description',
+        '.description',
+        '[class*="description"]',
+        '[class*="content"]',
+        'main',
+        'article'
+      ];
+      
+      for (const selector of descriptionSelectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+          const text = element.textContent.trim();
+          if (text.length > 100 && text.length < 5000) {
+            pageInfo.description = text.substring(0, 200) + '...';
+            break;
+          }
+        }
+      }
+      
+      // Try to find budget
+      const allText = document.body.textContent;
+      const budgetMatch = allText.match(/\$[\d,]+/);
+      if (budgetMatch) {
+        pageInfo.budget = budgetMatch[0];
+      }
+      
+      // Try to find skills
+      const skillElements = document.querySelectorAll('.air3-token, [class*="skill"], [class*="tag"]');
+      if (skillElements.length > 0) {
+        pageInfo.skills = Array.from(skillElements).map(el => el.textContent.trim()).filter(text => text.length > 0).slice(0, 5);
+      }
+      
+      console.log('📋 Page extraction results:', pageInfo);
+      return pageInfo;
+      
+    } catch (error) {
+      console.error('❌ Error in page context extraction:', error);
+      return { error: error.message };
+    }
+  }
+
+  // Check extension permissions and provide guidance
+  async checkPermissions() {
+    try {
+      const permissions = await chrome.permissions.getAll();
+      console.log('🔐 Extension permissions:', permissions);
+      
+      // Check if we have the necessary permissions
+      const hasScripting = permissions.permissions.includes('scripting');
+      const hasActiveTab = permissions.permissions.includes('activeTab');
+      
+      if (!hasScripting || !hasActiveTab) {
+        console.warn('⚠️ Missing required permissions for job extraction testing');
+        this.elements.testExtraction.style.opacity = '0.5';
+        this.elements.testExtraction.title = 'Missing permissions: scripting, activeTab';
+      }
+    } catch (error) {
+      console.error('Error checking permissions:', error);
     }
   }
 
